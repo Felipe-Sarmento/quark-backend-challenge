@@ -15,12 +15,7 @@ export class LeadService {
     @Inject(ILeadRepositoryToken) private repo: ILeadRepository,
   ) {}
 
-  async create(data: LeadCreationFields): Promise<Lead | null> {
-    const existing = await this.repo.findByEmail(data.email);
-    if (existing) {
-      return null;
-    }
-
+  async create(data: LeadCreationFields): Promise<Lead> {
     const lead = LeadFactory.create({ ...data, status: LeadStatus.PENDING });
     return this.repo.create(lead);
   }
@@ -42,8 +37,7 @@ export class LeadService {
   }
 
   async update(id: string, data: UpdateLeadDto): Promise<Lead> {
-    const existing = await this.findById(id);
-    return this.repo.update(Object.assign(existing, data, { updatedAt: new Date() }));
+    return this.repo.update({ id, ...data, updatedAt: new Date() } as Lead);
   }
 
   async updateStatus(id: string, status: LeadStatus): Promise<Lead> {

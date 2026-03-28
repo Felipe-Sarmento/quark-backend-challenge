@@ -3,31 +3,42 @@ import { PrismaService, Page } from '@modules/shared';
 import { Lead } from '../core/entity/lead.entity';
 import { LeadFactory } from '../core/factory/lead.factory';
 import { ILeadRepository } from '../core/interface/lead.repository.interface';
+import { LeadAlreadyExistsException } from '../core/exception/already-exists.lead.exception';
+import { LeadNotFoundException } from '../core/exception/not-found.lead.exception';
+import { ConflictLeadException } from '../core/exception/conflict.lead.exception';
 
 @Injectable()
 export class LeadRepository implements ILeadRepository {
   constructor(private prisma: PrismaService) {}
 
   async create(lead: Lead): Promise<Lead> {
-    const created = await this.prisma.lead.create({
-      data: {
-        id: lead.id,
-        fullName: lead.fullName,
-        email: lead.email,
-        phone: lead.phone,
-        companyName: lead.companyName,
-        companyCnpj: lead.companyCnpj,
-        companyWebsite: lead.companyWebsite,
-        estimatedValue: lead.estimatedValue,
-        source: lead.source,
-        notes: lead.notes,
-        status: lead.status,
-        createdAt: lead.createdAt,
-        updatedAt: lead.updatedAt,
-      },
-    });
+    try {
+      const created = await this.prisma.lead.create({
+        data: {
+          id: lead.id,
+          fullName: lead.fullName,
+          email: lead.email,
+          phone: lead.phone,
+          companyName: lead.companyName,
+          companyCnpj: lead.companyCnpj,
+          companyWebsite: lead.companyWebsite,
+          estimatedValue: lead.estimatedValue,
+          source: lead.source,
+          notes: lead.notes,
+          status: lead.status,
+          createdAt: lead.createdAt,
+          updatedAt: lead.updatedAt,
+        },
+      });
 
-    return LeadFactory.create(created as any);
+      return LeadFactory.create(created as any);
+    } catch (error: unknown) {
+      const prismaError = error as { code?: string };
+      if (prismaError.code === 'P2002') {
+        throw new LeadAlreadyExistsException();
+      }
+      throw error;
+    }
   }
 
   async findById(id: string): Promise<Lead | null> {
@@ -54,13 +65,25 @@ export class LeadRepository implements ILeadRepository {
   }
 
   async update(lead: Lead): Promise<Lead> {
-    const { id, createdAt, updatedAt, ...data } = lead;
-    const updated = await this.prisma.lead.update({
-      where: { id },
-      data,
-    });
+    const { id, createdAt: _createdAt, updatedAt: _updatedAt, ...data } = lead;
+    try {
+      const updated = await this.prisma.lead.update({
+        where: { id },
+        data,
+      });
 
-    return LeadFactory.create(updated as any);
+      return LeadFactory.create(updated as any);
+    } catch (error: unknown) {
+      const prismaError = error as { code?: string; meta?: { target?: string[] } };
+      if (prismaError.code === 'P2025') {
+        throw new LeadNotFoundException(id);
+      }
+      if (prismaError.code === 'P2002') {
+        const field = prismaError.meta?.target?.[0] ?? 'field';
+        throw new ConflictLeadException(field);
+      }
+      throw error;
+    }
   }
 
   async delete(id: string): Promise<void> {
