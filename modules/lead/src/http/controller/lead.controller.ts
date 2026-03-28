@@ -9,7 +9,6 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   ConflictException,
 } from '@nestjs/common';
 import { PageQueryDto } from '@modules/shared';
@@ -72,9 +71,6 @@ export class LeadController {
   @Get(':id')
   async findById(@Param('id') id: string): Promise<LeadResponse> {
     const lead = await this.leadService.findById(id);
-    if (!lead) {
-      throw new NotFoundException(`Lead with ID ${id} not found`);
-    }
     return LeadResponse.fromDomain(lead);
   }
 
@@ -88,10 +84,6 @@ export class LeadController {
       return LeadResponse.fromDomain(lead);
     } catch (error: unknown) {
       const prismaError = error as { code?: string; meta?: { target?: string[] } };
-      // Prisma record not found error (P2025)
-      if (prismaError.code === 'P2025') {
-        throw new NotFoundException(`Lead with ID ${id} not found`);
-      }
       // Unique constraint error
       if (prismaError.code === 'P2002') {
         const field = prismaError.meta?.target?.[0] || 'field';
@@ -104,15 +96,6 @@ export class LeadController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string): Promise<void> {
-    try {
-      await this.leadService.delete(id);
-    } catch (error: unknown) {
-      const prismaError = error as { code?: string };
-      // Prisma record not found error (P2025)
-      if (prismaError.code === 'P2025') {
-        throw new NotFoundException(`Lead with ID ${id} not found`);
-      }
-      throw error;
-    }
+    await this.leadService.delete(id);
   }
 }

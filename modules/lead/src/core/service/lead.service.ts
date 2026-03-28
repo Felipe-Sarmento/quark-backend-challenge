@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Page } from '@modules/shared';
 import { Lead, LeadStatus } from '../entity/lead.entity';
 import {
@@ -7,6 +7,7 @@ import {
 } from '../interface/lead.repository.interface';
 import { LeadFactory } from '../factory/lead.factory';
 import { LeadCreationFields } from '../entity/types';
+import { UpdateLeadDto } from '../../http/dto/update.lead.dto';
 
 @Injectable()
 export class LeadService {
@@ -24,8 +25,12 @@ export class LeadService {
     return this.repo.create(lead);
   }
 
-  async findById(id: string): Promise<Lead | null> {
-    return this.repo.findById(id);
+  async findById(id: string): Promise<Lead> {
+    const lead = await this.repo.findById(id);
+    if (!lead) {
+      throw new NotFoundException(`Lead with ID ${id} not found`);
+    }
+    return lead;
   }
 
   async findByEmail(email: string): Promise<Lead | null> {
@@ -36,26 +41,18 @@ export class LeadService {
     return this.repo.list(page);
   }
 
-  async update(
-    id: string,
-    data: Partial<Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>>,
-  ): Promise<Lead> {
-    const existing = await this.repo.findById(id);
-    if (!existing) {
-      throw new Error(`Lead with ID ${id} not found`);
-    }
+  async update(id: string, data: UpdateLeadDto): Promise<Lead> {
+    const existing = await this.findById(id);
     return this.repo.update(Object.assign(existing, data, { updatedAt: new Date() }));
   }
 
   async updateStatus(id: string, status: LeadStatus): Promise<Lead> {
-    const lead = await this.repo.findById(id);
-    if (!lead) {
-      throw new Error(`Lead with ID ${id} not found`);
-    }
+    const lead = await this.findById(id);
     return this.repo.update(Object.assign(lead, { status, updatedAt: new Date() }));
   }
 
   async delete(id: string): Promise<void> {
+    await this.findById(id);
     return this.repo.delete(id);
   }
 }
