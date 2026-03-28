@@ -28,4 +28,4 @@ export * from './exception/invalid-page.exception';
 export * from './http/filter/http-exception.filter';
 
 // HTTP DTOs
-export * from './http/dto/page.query.dto';
+// export * from './http/dto/page.query.dto'; // Commented to avoid class-transformer initialization issues in tests
