@@ -1,21 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LeadPrismaRepository } from '../lead.prisma.repository';
-import { Lead, LeadStatus, LeadSource } from '../../core/entity/lead.entity';
-import { LeadFactory } from '../../core/factory/lead.factory';
+import { Lead } from '../../core/entity/lead.entity';
+import { PrismaService, Page } from '@modules/shared';
 import { LeadAlreadyExistsException } from '../../core/exception/already-exists.lead.exception';
 import { LeadNotFoundException } from '../../core/exception/not-found.lead.exception';
 import { ConflictLeadException } from '../../core/exception/conflict.lead.exception';
+import { makeLeadEntity } from '@test/fixtures/make-lead.helper';
 
 // Type placeholder for PrismaService
-type PrismaService = any;
-
-// Mock Page to avoid class-transformer issues in test environment
-const createMockPage = (currentPage: number, size: number) => ({
-  currentPage,
-  size,
-  toSkip: () => (currentPage - 1) * size,
-  toTake: () => size,
-});
+type PrismaServiceMock = any;
 
 describe('LeadPrismaRepository', () => {
   const mockPrisma = {
@@ -27,49 +20,36 @@ describe('LeadPrismaRepository', () => {
       update: vi.fn(),
       delete: vi.fn(),
     },
-  } as unknown as PrismaService;
+  } as unknown as PrismaServiceMock;
 
   let repository: LeadPrismaRepository;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    repository = new LeadPrismaRepository(mockPrisma);
+    repository = new LeadPrismaRepository(mockPrisma as unknown as PrismaService);
   });
 
-  const makeLead = (overrides = {}) =>
-    LeadFactory.create({
-      id: 'lead-1',
-      fullName: 'John Doe',
-      email: 'john@example.com',
-      phone: '11999999999',
-      companyName: 'Acme',
-      companyCnpj: '12345678000199',
-      source: LeadSource.WEBSITE,
-      status: LeadStatus.PENDING,
-      createdAt: new Date('2024-01-01'),
-      updatedAt: new Date('2024-01-01'),
-      ...overrides,
-    });
+  const makeLeadRecord = (lead = makeLeadEntity()) => ({
+    id: lead.id,
+    fullName: lead.fullName,
+    email: lead.email,
+    phone: lead.phone,
+    companyName: lead.companyName,
+    companyCnpj: lead.companyCnpj,
+    companyWebsite: lead.companyWebsite,
+    estimatedValue: lead.estimatedValue,
+    source: lead.source,
+    notes: lead.notes,
+    status: lead.status,
+    createdAt: lead.createdAt,
+    updatedAt: lead.updatedAt,
+  });
 
   describe('create', () => {
     it('should save lead and return a Lead entity', async () => {
       // Arrange
-      const lead = makeLead();
-      (mockPrisma.lead.create as any).mockResolvedValue({
-        id: lead.id,
-        fullName: lead.fullName,
-        email: lead.email,
-        phone: lead.phone,
-        companyName: lead.companyName,
-        companyCnpj: lead.companyCnpj,
-        companyWebsite: lead.companyWebsite,
-        estimatedValue: lead.estimatedValue,
-        source: lead.source,
-        notes: lead.notes,
-        status: lead.status,
-        createdAt: lead.createdAt,
-        updatedAt: lead.updatedAt,
-      });
+      const lead = makeLeadEntity();
+      (mockPrisma.lead.create as any).mockResolvedValue(makeLeadRecord(lead));
 
       // Act
       const result = await repository.create(lead);
@@ -98,7 +78,7 @@ describe('LeadPrismaRepository', () => {
 
     it('should throw LeadAlreadyExistsException when email is duplicate (P2002)', async () => {
       // Arrange
-      const lead = makeLead();
+      const lead = makeLeadEntity();
       (mockPrisma.lead.create as any).mockRejectedValue({
         code: 'P2002',
       });
@@ -111,7 +91,7 @@ describe('LeadPrismaRepository', () => {
 
     it('should re-throw unknown errors', async () => {
       // Arrange
-      const lead = makeLead();
+      const lead = makeLeadEntity();
       const dbError = new Error('DB connection failed');
       (mockPrisma.lead.create as any).mockRejectedValue(dbError);
 
@@ -123,23 +103,9 @@ describe('LeadPrismaRepository', () => {
   describe('findById', () => {
     it('should return Lead when found', async () => {
       // Arrange
-      const leadId = 'lead-1';
-      const dbLead = makeLead({ id: leadId });
-      (mockPrisma.lead.findUnique as any).mockResolvedValue({
-        id: dbLead.id,
-        fullName: dbLead.fullName,
-        email: dbLead.email,
-        phone: dbLead.phone,
-        companyName: dbLead.companyName,
-        companyCnpj: dbLead.companyCnpj,
-        companyWebsite: dbLead.companyWebsite,
-        estimatedValue: dbLead.estimatedValue,
-        source: dbLead.source,
-        notes: dbLead.notes,
-        status: dbLead.status,
-        createdAt: dbLead.createdAt,
-        updatedAt: dbLead.updatedAt,
-      });
+      const lead = makeLeadEntity();
+      const leadId = lead.id!;
+      (mockPrisma.lead.findUnique as any).mockResolvedValue(makeLeadRecord(lead));
 
       // Act
       const result = await repository.findById(leadId);
@@ -171,23 +137,9 @@ describe('LeadPrismaRepository', () => {
   describe('findByEmail', () => {
     it('should return Lead when found', async () => {
       // Arrange
-      const email = 'john@example.com';
-      const dbLead = makeLead({ email });
-      (mockPrisma.lead.findUnique as any).mockResolvedValue({
-        id: dbLead.id,
-        fullName: dbLead.fullName,
-        email: dbLead.email,
-        phone: dbLead.phone,
-        companyName: dbLead.companyName,
-        companyCnpj: dbLead.companyCnpj,
-        companyWebsite: dbLead.companyWebsite,
-        estimatedValue: dbLead.estimatedValue,
-        source: dbLead.source,
-        notes: dbLead.notes,
-        status: dbLead.status,
-        createdAt: dbLead.createdAt,
-        updatedAt: dbLead.updatedAt,
-      });
+      const lead = makeLeadEntity();
+      const email = lead.email;
+      (mockPrisma.lead.findUnique as any).mockResolvedValue(makeLeadRecord(lead));
 
       // Act
       const result = await repository.findByEmail(email);
@@ -219,29 +171,13 @@ describe('LeadPrismaRepository', () => {
   describe('list', () => {
     it('should return mapped leads and totalItems', async () => {
       // Arrange
-      const page = createMockPage(1, 10);
-      const dbLead = makeLead();
-      (mockPrisma.lead.findMany as any).mockResolvedValue([
-        {
-          id: dbLead.id,
-          fullName: dbLead.fullName,
-          email: dbLead.email,
-          phone: dbLead.phone,
-          companyName: dbLead.companyName,
-          companyCnpj: dbLead.companyCnpj,
-          companyWebsite: dbLead.companyWebsite,
-          estimatedValue: dbLead.estimatedValue,
-          source: dbLead.source,
-          notes: dbLead.notes,
-          status: dbLead.status,
-          createdAt: dbLead.createdAt,
-          updatedAt: dbLead.updatedAt,
-        },
-      ]);
+      const page = Page.create(1, 10);
+      const lead = makeLeadEntity();
+      (mockPrisma.lead.findMany as any).mockResolvedValue([makeLeadRecord(lead)]);
       (mockPrisma.lead.count as any).mockResolvedValue(1);
 
       // Act
-      const result = await repository.list(page as any);
+      const result = await repository.list(page);
 
       // Assert
       expect(result.leads).toHaveLength(1);
@@ -251,12 +187,12 @@ describe('LeadPrismaRepository', () => {
 
     it('should return empty array when no leads exist', async () => {
       // Arrange
-      const page = createMockPage(1, 10);
+      const page = Page.create(1, 10);
       (mockPrisma.lead.findMany as any).mockResolvedValue([]);
       (mockPrisma.lead.count as any).mockResolvedValue(0);
 
       // Act
-      const result = await repository.list(page as any);
+      const result = await repository.list(page);
 
       // Assert
       expect(result.leads).toHaveLength(0);
@@ -265,12 +201,12 @@ describe('LeadPrismaRepository', () => {
 
     it('should pass skip=0 and take=10 for page 1 with size 10', async () => {
       // Arrange
-      const page = createMockPage(1, 10);
+      const page = Page.create(1, 10);
       (mockPrisma.lead.findMany as any).mockResolvedValue([]);
       (mockPrisma.lead.count as any).mockResolvedValue(0);
 
       // Act
-      await repository.list(page as any);
+      await repository.list(page);
 
       // Assert
       expect(mockPrisma.lead.findMany).toHaveBeenCalledWith({
@@ -282,12 +218,12 @@ describe('LeadPrismaRepository', () => {
 
     it('should pass skip=10 and take=10 for page 2 with size 10', async () => {
       // Arrange
-      const page = createMockPage(2, 10);
+      const page = Page.create(2, 10);
       (mockPrisma.lead.findMany as any).mockResolvedValue([]);
       (mockPrisma.lead.count as any).mockResolvedValue(0);
 
       // Act
-      await repository.list(page as any);
+      await repository.list(page);
 
       // Assert
       expect(mockPrisma.lead.findMany).toHaveBeenCalledWith({
@@ -299,12 +235,12 @@ describe('LeadPrismaRepository', () => {
 
     it('should pass skip=20 and take=5 for page 5 with size 5', async () => {
       // Arrange
-      const page = createMockPage(5, 5);
+      const page = Page.create(5, 5);
       (mockPrisma.lead.findMany as any).mockResolvedValue([]);
       (mockPrisma.lead.count as any).mockResolvedValue(0);
 
       // Act
-      await repository.list(page as any);
+      await repository.list(page);
 
       // Assert
       expect(mockPrisma.lead.findMany).toHaveBeenCalledWith({
@@ -318,22 +254,8 @@ describe('LeadPrismaRepository', () => {
   describe('update', () => {
     it('should update lead and return a Lead entity', async () => {
       // Arrange
-      const lead = makeLead({ fullName: 'Updated Name' });
-      (mockPrisma.lead.update as any).mockResolvedValue({
-        id: lead.id,
-        fullName: lead.fullName,
-        email: lead.email,
-        phone: lead.phone,
-        companyName: lead.companyName,
-        companyCnpj: lead.companyCnpj,
-        companyWebsite: lead.companyWebsite,
-        estimatedValue: lead.estimatedValue,
-        source: lead.source,
-        notes: lead.notes,
-        status: lead.status,
-        createdAt: lead.createdAt,
-        updatedAt: lead.updatedAt,
-      });
+      const lead = makeLeadEntity({ fullName: 'Updated Name' });
+      (mockPrisma.lead.update as any).mockResolvedValue(makeLeadRecord(lead));
 
       // Act
       const result = await repository.update(lead);
@@ -352,7 +274,7 @@ describe('LeadPrismaRepository', () => {
 
     it('should throw LeadNotFoundException when lead not found (P2025)', async () => {
       // Arrange
-      const lead = makeLead();
+      const lead = makeLeadEntity();
       (mockPrisma.lead.update as any).mockRejectedValue({
         code: 'P2025',
       });
@@ -365,7 +287,7 @@ describe('LeadPrismaRepository', () => {
 
     it('should throw ConflictLeadException with field name when email is duplicate (P2002)', async () => {
       // Arrange
-      const lead = makeLead();
+      const lead = makeLeadEntity();
       (mockPrisma.lead.update as any).mockRejectedValue({
         code: 'P2002',
         meta: { target: ['email'] },
@@ -380,7 +302,7 @@ describe('LeadPrismaRepository', () => {
 
     it('should throw ConflictLeadException with fallback field when meta.target is missing (P2002)', async () => {
       // Arrange
-      const lead = makeLead();
+      const lead = makeLeadEntity();
       (mockPrisma.lead.update as any).mockRejectedValue({
         code: 'P2002',
         meta: {},
@@ -395,7 +317,7 @@ describe('LeadPrismaRepository', () => {
 
     it('should re-throw unknown errors', async () => {
       // Arrange
-      const lead = makeLead();
+      const lead = makeLeadEntity();
       const dbError = new Error('DB connection failed');
       (mockPrisma.lead.update as any).mockRejectedValue(dbError);
 
