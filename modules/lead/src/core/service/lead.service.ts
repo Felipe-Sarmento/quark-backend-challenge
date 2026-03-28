@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@modules/shared';
+import { PrismaService, Page } from '@modules/shared';
 import { Lead, LeadStatus, LeadSource } from '../entity/lead.entity';
 
 @Injectable()
@@ -37,14 +37,17 @@ export class LeadService {
     return lead ? new Lead(lead as any) : null;
   }
 
-  async list(skip = 0, take = 10): Promise<Lead[]> {
-    const leads = await this.prisma.lead.findMany({
-      skip,
-      take,
-      orderBy: { createdAt: 'desc' },
-    });
+  async list(page: Page): Promise<{ leads: Lead[]; totalItems: number }> {
+    const [leads, totalItems] = await Promise.all([
+      this.prisma.lead.findMany({
+        skip: page.toSkip(),
+        take: page.toTake(),
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.lead.count(),
+    ]);
 
-    return leads.map((l) => new Lead(l as any));
+    return { leads: leads.map((l) => new Lead(l as any)), totalItems };
   }
 
   async update(

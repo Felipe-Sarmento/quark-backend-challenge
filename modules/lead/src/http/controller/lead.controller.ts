@@ -12,11 +12,12 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { PageQueryDto } from '@modules/shared';
 import { LeadService } from '../../core/service/lead.service';
 import { CreateLeadDto } from '../dto/create.lead.dto';
 import { UpdateLeadDto } from '../dto/update.lead.dto';
-import { ListLeadsQueryDto } from '../dto/list-leads.query.dto';
 import { LeadResponse } from '../response/lead.response';
+import { LeadListResponse } from '../response/lead-list.response';
 
 @Controller('leads')
 export class LeadController {
@@ -40,11 +41,14 @@ export class LeadController {
   }
 
   @Get()
-  async list(@Query() queryDto: ListLeadsQueryDto): Promise<LeadResponse[]> {
-    const skip = queryDto.skip ?? 0;
-    const take = queryDto.take ?? 10;
-    const leads = await this.leadService.list(skip, take);
-    return leads.map((lead) => new LeadResponse(lead));
+  async list(@Query() query: PageQueryDto): Promise<LeadListResponse> {
+    const page = query.toPage();
+    const { leads, totalItems } = await this.leadService.list(page);
+    const enrichedPage = page.withTotals(totalItems);
+    return new LeadListResponse(
+      leads.map((lead) => new LeadResponse(lead)),
+      enrichedPage,
+    );
   }
 
   @Get(':id')
