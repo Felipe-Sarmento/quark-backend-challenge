@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Lead {
+  id                String   @id @default(cuid())
+  fullName          String
+  email             String   @unique
+  phone             String   @db.VarChar(20)
+  companyName       String
+  companyCnpj       String   @unique @db.VarChar(18)
+  companyWebsite    String?
+  estimatedValue    Float?
+  source            LeadSource
+  notes             String?
+
+  // Status tracking
+  status            LeadStatus @default(PENDING)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  // Relations
+  enrichments       Enrichment[]
+  classifications   Classification[]
+
+  @@index([email])
+  @@index([companyCnpj])
+  @@index([status])
+}
+
+model Enrichment {
+  id                String   @id @default(cuid())
+  leadId            String
+  lead              Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  status            EnrichmentStatus
+  requestedAt       DateTime @default(now())
+  completedAt       DateTime?
+  errorMessage      String?
+
+  // Enrichment data (JSON to store flexible structure from external API)
+  enrichmentData    Json?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+}
+
+model Classification {
+  id                String   @id @default(cuid())
+  leadId            String
+  lead              Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  status            ClassificationStatus
+  requestedAt       DateTime @default(now())
+  completedAt       DateTime?
+  errorMessage      String?
+
+  // Classification results from Ollama
+  score             Int?     // 0-100
+  classification    String?  // Hot, Warm, Cold
+  justification     String?
+  commercialPotential String? // High, Medium, Low
+  modelUsed         String?  // e.g., "tinyllama", "phi3:mini"
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+}
+
+enum LeadStatus {
+  PENDING
+  ENRICHING
+  ENRICHED
+  CLASSIFYING
+  CLASSIFIED
+  FAILED
+}
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  PAID_ADS
+  ORGANIC
+  OTHER
+}
+
+enum EnrichmentStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+enum ClassificationStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
