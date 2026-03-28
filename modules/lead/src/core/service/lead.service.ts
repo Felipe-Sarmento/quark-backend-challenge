@@ -1,23 +1,26 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Page } from '@modules/shared';
 import { Lead, LeadStatus } from '../entity/lead.entity';
-import {
-  ILeadRepository,
-  ILeadRepository as ILeadRepositoryToken,
-} from '../interface/lead.repository.interface';
+import { ILeadRepository } from '../interface/lead.repository.interface';
 import { LeadFactory } from '../factory/lead.factory';
 import { LeadCreationFields } from '../entity/types';
 import { UpdateLeadDto } from '../../http/dto/update.lead.dto';
+import { LeadAlreadyExistsException } from '../exception/already-exists.lead.exception';
 
 @Injectable()
 export class LeadService {
   constructor(
-    @Inject(ILeadRepositoryToken) private repo: ILeadRepository,
+    @Inject(ILeadRepository) private repo: ILeadRepository,
   ) {}
 
   async create(data: LeadCreationFields): Promise<Lead> {
     const lead = LeadFactory.create({ ...data, status: LeadStatus.PENDING });
-    return this.repo.create(lead);
+    try {
+      return await this.repo.create(lead);
+    } catch (error) {
+      if (error instanceof LeadAlreadyExistsException) throw error;
+      throw error;
+    }
   }
 
   async findById(id: string): Promise<Lead> {
@@ -28,8 +31,12 @@ export class LeadService {
     return lead;
   }
 
-  async findByEmail(email: string): Promise<Lead | null> {
-    return this.repo.findByEmail(email);
+  async findByEmail(email: string): Promise<Lead> {
+    const lead = await this.repo.findByEmail(email);
+    if (!lead) {
+      throw new NotFoundException(`Lead with email ${email} not found`);
+    }
+    return lead;
   }
 
   async list(page: Page): Promise<{ leads: Lead[]; totalItems: number }> {
@@ -46,7 +53,6 @@ export class LeadService {
   }
 
   async delete(id: string): Promise<void> {
-    await this.findById(id);
     return this.repo.delete(id);
   }
 }

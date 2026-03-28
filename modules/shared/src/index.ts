@@ -5,6 +5,7 @@ export * from './config/config.service';
 // Prisma
 export * from './prisma/prisma.module';
 export * from './prisma/prisma.service';
+export * from './prisma/prisma.error-codes';
 
 // RabbitMQ
 export * from './rabbitmq/rabbitmq.module';

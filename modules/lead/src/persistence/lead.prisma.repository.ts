@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService, Page } from '@modules/shared';
+import { PrismaService, Page, PrismaErrorCode } from '@modules/shared';
 import { LeadFactory } from '../core/factory/lead.factory';
 import { ILeadRepository } from '../core/interface/lead.repository.interface';
 import { LeadAlreadyExistsException } from '../core/exception/already-exists.lead.exception';
@@ -34,7 +34,7 @@ export class LeadPrismaRepository implements ILeadRepository {
       return LeadFactory.create(created as Lead);
     } catch (error: unknown) {
       const prismaError = error as { code?: string };
-      if (prismaError.code === 'P2002') {
+      if (prismaError.code === PrismaErrorCode.UniqueConstraint) {
         throw new LeadAlreadyExistsException();
       }
       throw error;
@@ -75,10 +75,10 @@ export class LeadPrismaRepository implements ILeadRepository {
       return LeadFactory.create(updated as any);
     } catch (error: unknown) {
       const prismaError = error as { code?: string; meta?: { target?: string[] } };
-      if (prismaError.code === 'P2025') {
+      if (prismaError.code === PrismaErrorCode.EntityNotFound) {
         throw new LeadNotFoundException(id);
       }
-      if (prismaError.code === 'P2002') {
+      if (prismaError.code === PrismaErrorCode.UniqueConstraint) {
         const field = prismaError.meta?.target?.[0] ?? 'field';
         throw new ConflictLeadException(field);
       }
@@ -91,7 +91,7 @@ export class LeadPrismaRepository implements ILeadRepository {
       await this.prisma.lead.delete({ where: { id } });
     } catch (error: unknown) {
       const prismaError = error as { code?: string };
-      if (prismaError.code === 'P2025') {
+      if (prismaError.code === PrismaErrorCode.EntityNotFound) {
         throw new LeadNotFoundException(id);
       }
       throw error;
