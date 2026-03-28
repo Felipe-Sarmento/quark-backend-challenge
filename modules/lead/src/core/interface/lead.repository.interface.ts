@@ -1,18 +1,8 @@
-import { Lead, LeadStatus } from '../entity/lead.entity';
+import { Lead } from '../entity/lead.entity';
 import { Page } from '@modules/shared';
 
 export interface ILeadRepository {
-  create(data: {
-    fullName: string;
-    email: string;
-    phone: string;
-    companyName: string;
-    companyCnpj: string;
-    companyWebsite?: string;
-    estimatedValue?: number;
-    source: any;
-    notes?: string;
-  }): Promise<Lead>;
+  create(lead: Lead): Promise<Lead>;
 
   findById(id: string): Promise<Lead | null>;
 
@@ -20,12 +10,7 @@ export interface ILeadRepository {
 
   list(page: Page): Promise<{ leads: Lead[]; totalItems: number }>;
 
-  update(
-    id: string,
-    data: Partial<Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>>,
-  ): Promise<Lead>;
-
-  updateStatus(id: string, status: LeadStatus): Promise<Lead>;
+  update(lead: Lead): Promise<Lead>;
 
   delete(id: string): Promise<void>;
 }

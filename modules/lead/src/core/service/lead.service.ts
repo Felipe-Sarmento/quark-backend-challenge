@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Page } from '@modules/shared';
-import { Lead, LeadStatus, LeadSource } from '../entity/lead.entity';
+import { Lead, LeadStatus, LeadSource, ILead } from '../entity/lead.entity';
 import {
   ILeadRepository,
   ILeadRepository as ILeadRepositoryToken,
@@ -23,7 +23,11 @@ export class LeadService {
     source: LeadSource;
     notes?: string;
   }): Promise<Lead> {
-    return this.repo.create(data);
+    const lead = new Lead({
+      ...data,
+      status: LeadStatus.PENDING,
+    } as ILead);
+    return this.repo.create(lead);
   }
 
   async findById(id: string): Promise<Lead | null> {
@@ -42,11 +46,19 @@ export class LeadService {
     id: string,
     data: Partial<Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>>,
   ): Promise<Lead> {
-    return this.repo.update(id, data);
+    const existing = await this.repo.findById(id);
+    if (!existing) {
+      throw new Error(`Lead with ID ${id} not found`);
+    }
+    return this.repo.update(Object.assign(existing, data));
   }
 
   async updateStatus(id: string, status: LeadStatus): Promise<Lead> {
-    return this.repo.updateStatus(id, status);
+    const lead = await this.repo.findById(id);
+    if (!lead) {
+      throw new Error(`Lead with ID ${id} not found`);
+    }
+    return this.repo.update(Object.assign(lead, { status }));
   }
 
   async delete(id: string): Promise<void> {

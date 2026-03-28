@@ -1,29 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService, Page } from '@modules/shared';
-import { Lead, LeadStatus } from '../core/entity/lead.entity';
+import { Lead } from '../core/entity/lead.entity';
 import { ILeadRepository } from '../core/interface/lead.repository.interface';
 
 @Injectable()
 export class LeadRepository implements ILeadRepository {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: {
-    fullName: string;
-    email: string;
-    phone: string;
-    companyName: string;
-    companyCnpj: string;
-    companyWebsite?: string;
-    estimatedValue?: number;
-    source: any;
-    notes?: string;
-  }): Promise<Lead> {
-    const created = await this.prisma.lead.create({
-      data: {
-        ...data,
-        status: LeadStatus.PENDING,
-      },
-    });
+  async create(lead: Lead): Promise<Lead> {
+    const { id, createdAt, updatedAt, ...data } = lead;
+    const created = await this.prisma.lead.create({ data });
 
     return new Lead(created as any);
   }
@@ -51,22 +37,11 @@ export class LeadRepository implements ILeadRepository {
     return { leads: leads.map((l) => new Lead(l as any)), totalItems };
   }
 
-  async update(
-    id: string,
-    data: Partial<Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>>,
-  ): Promise<Lead> {
+  async update(lead: Lead): Promise<Lead> {
+    const { id, createdAt, updatedAt, ...data } = lead;
     const updated = await this.prisma.lead.update({
       where: { id },
       data,
-    });
-
-    return new Lead(updated as any);
-  }
-
-  async updateStatus(id: string, status: LeadStatus): Promise<Lead> {
-    const updated = await this.prisma.lead.update({
-      where: { id },
-      data: { status },
     });
 
     return new Lead(updated as any);
