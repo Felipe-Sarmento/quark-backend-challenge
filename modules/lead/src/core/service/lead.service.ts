@@ -1,10 +1,16 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService, Page } from '@modules/shared';
+import { Inject, Injectable } from '@nestjs/common';
+import { Page } from '@modules/shared';
 import { Lead, LeadStatus, LeadSource } from '../entity/lead.entity';
+import {
+  ILeadRepository,
+  ILeadRepository as ILeadRepositoryToken,
+} from '../interface/lead.repository.interface';
 
 @Injectable()
 export class LeadService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @Inject(ILeadRepositoryToken) private repo: ILeadRepository,
+  ) {}
 
   async create(data: {
     fullName: string;
@@ -17,61 +23,33 @@ export class LeadService {
     source: LeadSource;
     notes?: string;
   }): Promise<Lead> {
-    const created = await this.prisma.lead.create({
-      data: {
-        ...data,
-        status: LeadStatus.PENDING,
-      },
-    });
-
-    return new Lead(created as any);
+    return this.repo.create(data);
   }
 
   async findById(id: string): Promise<Lead | null> {
-    const lead = await this.prisma.lead.findUnique({ where: { id } });
-    return lead ? new Lead(lead as any) : null;
+    return this.repo.findById(id);
   }
 
   async findByEmail(email: string): Promise<Lead | null> {
-    const lead = await this.prisma.lead.findUnique({ where: { email } });
-    return lead ? new Lead(lead as any) : null;
+    return this.repo.findByEmail(email);
   }
 
   async list(page: Page): Promise<{ leads: Lead[]; totalItems: number }> {
-    const [leads, totalItems] = await Promise.all([
-      this.prisma.lead.findMany({
-        skip: page.toSkip(),
-        take: page.toTake(),
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.lead.count(),
-    ]);
-
-    return { leads: leads.map((l) => new Lead(l as any)), totalItems };
+    return this.repo.list(page);
   }
 
   async update(
     id: string,
     data: Partial<Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>>,
   ): Promise<Lead> {
-    const updated = await this.prisma.lead.update({
-      where: { id },
-      data,
-    });
-
-    return new Lead(updated as any);
+    return this.repo.update(id, data);
   }
 
   async updateStatus(id: string, status: LeadStatus): Promise<Lead> {
-    const updated = await this.prisma.lead.update({
-      where: { id },
-      data: { status },
-    });
-
-    return new Lead(updated as any);
+    return this.repo.updateStatus(id, status);
   }
 
   async delete(id: string): Promise<void> {
-    await this.prisma.lead.delete({ where: { id } });
+    return this.repo.delete(id);
   }
 }
