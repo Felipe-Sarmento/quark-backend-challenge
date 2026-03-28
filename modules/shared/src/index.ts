@@ -13,7 +13,12 @@ export * from './rabbitmq/rabbitmq.constants';
 // Primitives
 export * from './primitives/cnpj';
 export * from './primitives/phone';
+export * from './primitives/page';
 
 // Exceptions
 export * from './exception/invalid-cnpj.exception';
 export * from './exception/invalid-phone.exception';
+export * from './exception/invalid-page.exception';
+
+// HTTP DTOs
+export * from './http/dto/page.query.dto';
