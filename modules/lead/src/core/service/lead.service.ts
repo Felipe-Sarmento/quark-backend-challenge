@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import { Page } from '@modules/shared';
-import { Lead, LeadStatus, LeadSource, ILead } from '../entity/lead.entity';
+import { Lead, LeadStatus } from '../entity/lead.entity';
 import {
   ILeadRepository,
   ILeadRepository as ILeadRepositoryToken,
 } from '../interface/lead.repository.interface';
+import { LeadCreationFields, LeadFactory } from '../factory/lead.factory';
 
 @Injectable()
 export class LeadService {
@@ -13,25 +13,8 @@ export class LeadService {
     @Inject(ILeadRepositoryToken) private repo: ILeadRepository,
   ) {}
 
-  async create(data: {
-    fullName: string;
-    email: string;
-    phone: string;
-    companyName: string;
-    companyCnpj: string;
-    companyWebsite?: string;
-    estimatedValue?: number;
-    source: LeadSource;
-    notes?: string;
-  }): Promise<Lead> {
-    const now = new Date();
-    const lead = new Lead({
-      ...data,
-      id: randomUUID(),
-      status: LeadStatus.PENDING,
-      createdAt: now,
-      updatedAt: now,
-    } as ILead);
+  async create(data: LeadCreationFields): Promise<Lead> {
+    const lead = LeadFactory.create(data);
     return this.repo.create(lead);
   }
 
