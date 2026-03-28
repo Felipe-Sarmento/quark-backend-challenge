@@ -2,50 +2,164 @@
 
 ## Architecture Overview
 
-This project uses **NestJS + TypeScript with Domain-Driven Design (DDD)** principles. The codebase is organized into two main areas within `src/`:
+This project uses **NestJS + TypeScript** for a lead enrichment and AI classification system. The codebase follows a **two-root monorepo layout** with pnpm workspaces:
 
 ```
-src/
-├── module/          # Bounded contexts (main modules)
-│   ├── +example/    # Template reference module
-│   ├── identity/    # Users, workspaces, memberships, auth, invitations
-│   ├── crm/         # Leads, tags, custom fields, comments
-│   ├── communication/ # Accounts & channels (WhatsApp, etc)
-│   ├── campaign/    # Mass communication campaigns
-│   ├── conversation/ # Messages between system & leads
-│   └── engagement/  # Lead engagement temperature analysis
-└── shared/
-    ├── lib/         # Pure code, framework-agnostic
-    └── module/      # NestJS shared modules (Prisma, Auth, Config, Redis, Email, etc)
+modules/                  # Domain modules (@quark/* packages)
+├── shared/               # @quark/shared – Config, Prisma, RabbitMQ
+├── lead/                 # @quark/lead – Lead entity, service, HTTP controller, queue producers
+├── enrichment/           # @quark/enrichment – Enrichment service, mock-api HTTP client, queue consumer
+├── extraction/           # @quark/extraction – Classification service, Ollama HTTP client, queue consumer
+└── mock-api/             # @quark/mock-api – Mock enrichment API (simulates third-party service)
+
+app/                      # Runnable NestJS applications (compose modules + expose HTTP/queue)
+├── lead-api/             # HTTP REST API – Lead CRUD operations
+├── enrichment/           # RabbitMQ worker – consumes enrichment queue, calls mock-api
+├── extraction/           # RabbitMQ worker – consumes classification queue, calls Ollama
+└── mock-api/             # HTTP API – mock company enrichment endpoint
 ```
 
-Database: `prisma/` (`schema.prisma`, `migrations/`, `seed/`).
-Builds: `dist/`; Docs: `docs/`.
-Tests: unit under `src/**/**/*.spec.ts`; integration under `src/**/**/*.e2e.spec.ts`; helpers under `test/`.
+Database: `prisma/schema.prisma` (PostgreSQL with Leads, Enrichments, Classifications models).
+
+### Architecture Rules
+- **`modules/`** contains domain logic: entities, services, HTTP controllers, HTTP clients, queue producers/consumers.
+- **`app/`** contains bootstrap entry points — each app imports from `modules/`, composes them, and runs as a standalone process (HTTP server or RabbitMQ worker).
+- **Constraint:** Apps import from modules; modules **never** import from app.
+- **`modules/shared/`** is the shared infrastructure: Zod config validation, Prisma client, RabbitMQ constants/client.
 
 ---
 
-## Project Structure (This Challenge)
+## Modules & Applications
 
-This repository uses a **two-root layout** instead of the standard `src/module` + `src/shared` split:
+### Modules (`modules/`)
 
-```
-modules/                  # Reusable domain modules (shared across apps)
-├── lead/                 # Lead domain: entities, services, repositories, queue contracts
-└── shared/               # Cross-module utilities and shared domain primitives
+#### `@quark/shared` — Shared Infrastructure
+- **Location:** `modules/shared/`
+- **Purpose:** Cross-cutting configuration, database, and messaging
+- **Exports:**
+  - `AppConfigModule` + `ConfigService` — Zod-validated env vars: `DATABASE_URL`, `RABBITMQ_URL`, `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `MOCK_API_URL`, `LEAD_API_PORT`, `MOCK_API_PORT`
+  - `PrismaModule` + `PrismaService` — PostgreSQL client via Prisma ORM
+  - `RabbitmqModule` — RabbitMQ client registration via `ClientsModule.registerAsync`
+- **No HTTP endpoints.** No queue consumers. Pure infra.
 
-app/                      # Runnable NestJS applications
-├── lead-api/             # REST API – Lead CRUD + trigger endpoints
-├── classification/       # Worker – consumes classification queue, calls Ollama
-├── enrichment/           # Worker – consumes enrichment queue, calls mock-api
-└── mock-api/             # Mock external enrichment API (simulates third-party service)
-```
+#### `@quark/lead` — Lead Domain
+- **Location:** `modules/lead/`
+- **Purpose:** Lead entity, CRUD service, HTTP REST controller, queue job producers
+- **Structure:**
+  ```
+  lead/
+    lead.module.ts          # NestJS module
+    core/
+      entity/               # Lead, Enrichment, Classification entities (3 models)
+      service/
+        lead.service.ts     # CRUD operations via Prisma
+    http/
+      controller/           # REST endpoints: POST/GET/GET:id/PATCH:id/DELETE:id /leads
+      dto/                  # CreateLeadDto, UpdateLeadDto, ListLeadsQueryDto
+      response/             # Response serialization
+    queue/
+      producer/
+        enrichment-job.queue-producer.ts          # emits ENRICHMENT_TRIGGER
+        classification-job.queue-producer.ts      # emits CLASSIFICATION_TRIGGER
+  ```
+- **HTTP Endpoints:** `/leads` (full CRUD)
+- **Queue Producers:** Triggered after lead creation to enqueue enrichment + classification jobs
+- **Dependencies:** Imports from `@quark/shared` (Prisma, RabbitMQ)
 
-### Rules
-- `modules/` contains **pure domain logic**: no HTTP controllers, no queue consumers.
-- `app/` contains **runnable apps** that compose modules and expose HTTP or queue consumers.
-- Apps import from `modules/` but **modules never import from `app/`**.
-- `modules/shared/` is the equivalent of `src/shared/` (Prisma, config, Redis, etc).
+#### `@quark/enrichment` — Company Data Enrichment Worker
+- **Location:** `modules/enrichment/`
+- **Purpose:** Consumes enrichment jobs, calls mock-api HTTP service, persists results
+- **Structure:**
+  ```
+  enrichment/
+    enrichment.module.ts            # NestJS module
+    core/
+      service/
+        enrichment.service.ts       # Create/update enrichment records via Prisma
+    http/
+      client/
+        mock-api.client.ts          # HTTP GET {MOCK_API_URL}/enrichment/{cnpj}
+    queue/
+      consumer/
+        enrichment.queue-consumer.ts  # @EventPattern(ENRICHMENT_TRIGGER)
+  ```
+- **Queue Consumer:** `@EventPattern('enrichment-trigger')` → creates record → calls mock-api → updates success/failure
+- **HTTP Client:** Calls `@quark/mock-api` (external service)
+- **Dependencies:** Imports from `@quark/shared` (Prisma, RabbitMQ, HttpModule)
+
+#### `@quark/extraction` — AI Lead Classification Worker
+- **Location:** `modules/extraction/`
+- **Purpose:** Consumes classification jobs, calls Ollama LLM, parses + persists results
+- **Structure:**
+  ```
+  extraction/
+    extraction.module.ts            # NestJS module
+    core/
+      service/
+        extraction.service.ts       # Create/update classification records via Prisma
+    http/
+      client/
+        ollama.client.ts            # HTTP POST {OLLAMA_BASE_URL}/api/generate
+    queue/
+      consumer/
+        extraction.queue-consumer.ts  # @EventPattern(CLASSIFICATION_TRIGGER)
+  ```
+- **Queue Consumer:** `@EventPattern('classification-trigger')` → creates record → builds B2B prospecting prompt (Portuguese) → calls Ollama → parses JSON response (`{score, classification (HOT/WARM/COLD), justification, commercialPotential (HIGH/MEDIUM/LOW)}`) → updates record
+- **Fallback:** If JSON parse fails, defaults to `{score: 50, WARM, MEDIUM}`
+- **HTTP Client:** Calls local Ollama service
+- **Dependencies:** Imports from `@quark/shared` (Prisma, RabbitMQ, HttpModule)
+
+#### `@quark/mock-api` — Mock Enrichment API
+- **Location:** `modules/mock-api/`
+- **Purpose:** Simulates third-party company enrichment API (e.g., Receita Federal)
+- **Structure:**
+  ```
+  mock-api/
+    mock-api.module.ts              # NestJS module
+    core/
+      service/
+        mock-api.service.ts         # Static mock data lookup
+    http/
+      controller/
+        company.controller.ts       # GET /enrichment/:cnpj
+  ```
+- **HTTP Endpoint:** `GET /enrichment/{cnpj}` → returns static company data (legalName, partners, addresses, CNAEs, foundedAt, phones, emails)
+- **No Queue:** Pure HTTP service
+- **Dependencies:** Minimal (no Prisma, no RabbitMQ)
+
+### Applications (`app/`)
+
+#### `app/lead-api` — REST API Server
+- **Port:** `LEAD_API_PORT` (default `3000`)
+- **Purpose:** Public-facing HTTP server for Lead CRUD + job triggers
+- **Root Module:** `LeadApiModule` (imports `AppConfigModule`, `PrismaModule`, `RabbitmqModule`, `LeadModule`)
+- **Bootstrap:** `main.ts` — standard NestJS HTTP app with global `ValidationPipe` (whitelist, forbidNonWhitelisted, transform)
+- **Endpoints:** Delegates to `/leads` controller from `@quark/lead`
+- **Dependencies:** `@quark/lead`, `@quark/shared`
+
+#### `app/enrichment` — RabbitMQ Worker
+- **Transport:** RabbitMQ microservice (queue: `default-queue`)
+- **Purpose:** Worker process for enrichment jobs
+- **Root Module:** `EnrichmentAppModule` (imports `AppConfigModule`, `EnrichmentModule`)
+- **Bootstrap:** `main.ts` — NestJS microservice via `connectMicroservice(Transport.RMQ)`
+- **Consumes:** `enrichment-trigger` events
+- **Dependencies:** `@quark/enrichment`, `@quark/shared`
+
+#### `app/extraction` — RabbitMQ Worker
+- **Transport:** RabbitMQ microservice (queue: `default-queue`)
+- **Purpose:** Worker process for AI classification jobs
+- **Root Module:** `ExtractionAppModule` (imports `AppConfigModule`, `ExtractionModule`)
+- **Bootstrap:** `main.ts` — NestJS microservice via `connectMicroservice(Transport.RMQ)`
+- **Consumes:** `classification-trigger` events
+- **Dependencies:** `@quark/extraction`, `@quark/shared`
+
+#### `app/mock-api` — Mock API Server
+- **Port:** `MOCK_API_PORT` (default `3001`)
+- **Purpose:** HTTP server simulating external enrichment API
+- **Root Module:** `MockApiAppModule` (imports `AppConfigModule`, `MockApiModule`)
+- **Bootstrap:** `main.ts` — standard NestJS HTTP app
+- **Endpoints:** `GET /enrichment/{cnpj}` (delegates to `@quark/mock-api`)
+- **Dependencies:** `@quark/mock-api`, `@quark/shared`
 
 ---
 
