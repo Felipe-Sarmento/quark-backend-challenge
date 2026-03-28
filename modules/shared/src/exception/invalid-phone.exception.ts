@@ -1,6 +1,7 @@
-export class InvalidPhoneException extends Error {
+import { InternalException } from './internal.exception';
+
+export class InvalidPhoneException extends InternalException {
   constructor(value: string) {
-    super(`Invalid phone: "${value}"`);
-    this.name = 'InvalidPhoneException';
+    super(`Invalid phone: "${value}"`, 400);
   }
 }

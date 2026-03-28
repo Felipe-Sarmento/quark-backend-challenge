@@ -19,9 +19,13 @@ export * from './primitives/phone';
 export * from './primitives/page';
 
 // Exceptions
+export * from './exception/internal.exception';
 export * from './exception/invalid-cnpj.exception';
 export * from './exception/invalid-phone.exception';
 export * from './exception/invalid-page.exception';
+
+// HTTP Filters
+export * from './http/filter/http-exception.filter';
 
 // HTTP DTOs
 export * from './http/dto/page.query.dto';

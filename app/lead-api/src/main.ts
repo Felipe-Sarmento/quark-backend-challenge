@@ -1,12 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@modules/shared';
+import { ConfigService, HttpExceptionFilter } from '@modules/shared';
 import { LeadApiModule } from './lead-api.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(LeadApiModule);
   const configService = app.get(ConfigService);
   const port = configService.leadApiPort;
+
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({
