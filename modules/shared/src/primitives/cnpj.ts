@@ -1,6 +1,6 @@
 import { InvalidCnpjException } from '../exception/invalid-cnpj.exception';
 
-export class CnpjVo {
+export class Cnpj {
   private readonly value: string; // 14 clean digits
 
   private constructor(raw: string) {
@@ -8,8 +8,8 @@ export class CnpjVo {
     this.validateOrThrow();
   }
 
-  static create(raw: string): CnpjVo {
-    return new CnpjVo(raw);
+  static create(raw: string): Cnpj {
+    return new Cnpj(raw);
   }
 
   private validateOrThrow(): void {

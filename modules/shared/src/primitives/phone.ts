@@ -1,6 +1,6 @@
 import { InvalidPhoneException } from '../exception/invalid-phone.exception';
 
-export class PhoneVo {
+export class Phone {
   private readonly value: string; // clean digits only
 
   private constructor(raw: string) {
@@ -8,8 +8,8 @@ export class PhoneVo {
     this.validateOrThrow();
   }
 
-  static create(raw: string): PhoneVo {
-    return new PhoneVo(raw);
+  static create(raw: string): Phone {
+    return new Phone(raw);
   }
 
   private validateOrThrow(): void {

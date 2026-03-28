@@ -10,9 +10,9 @@ export * from './prisma/prisma.service';
 export * from './rabbitmq/rabbitmq.module';
 export * from './rabbitmq/rabbitmq.constants';
 
-// Value Objects
-export * from './vo/cnpj.vo';
-export * from './vo/phone.vo';
+// Primitives
+export * from './primitives/cnpj';
+export * from './primitives/phone';
 
 // Exceptions
 export * from './exception/invalid-cnpj.exception';
