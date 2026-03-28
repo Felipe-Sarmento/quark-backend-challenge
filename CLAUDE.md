@@ -1112,4 +1112,18 @@ Defines:
 
 **Invoke:** `/factory-creation`
 
+### `/unit-test`
+**Use when:** Writing unit tests for services, usecases, value objects, or factories.
+
+Defines:
+- Test runner: Vitest with explicit imports (`describe, it, expect, vi`)
+- File location: `__test__/[entity].spec.ts` next to source
+- AAA pattern: explicit `// Arrange`, `// Act`, `// Assert` comments
+- Test structure: describe(ClassName) > describe(methodName — scenario) > it(should...)
+- Mocking: **Always mock all external dependencies** (repository, HTTP client, queue producer, services) with `vi.fn()`
+- One concept per test: each `it()` tests exactly one behavior
+- Exception testing: `.toThrow(ExceptionClass)` and `.toThrow(/regex/)`
+
+**Invoke:** `/unit-test`
+
 ---
