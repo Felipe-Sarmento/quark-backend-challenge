@@ -5,7 +5,8 @@ import {
   ILeadRepository,
   ILeadRepository as ILeadRepositoryToken,
 } from '../interface/lead.repository.interface';
-import { LeadCreationFields, LeadFactory } from '../factory/lead.factory';
+import { LeadFactory } from '../factory/lead.factory';
+import { LeadCreationFields } from '../entity/types';
 
 @Injectable()
 export class LeadService {

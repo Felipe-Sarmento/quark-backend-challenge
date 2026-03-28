@@ -1,17 +1,6 @@
 import { randomUUID } from 'crypto';
-import { Lead, LeadStatus, LeadSource } from '../entity/lead.entity';
-
-export interface LeadCreationFields {
-  fullName: string;
-  email: string;
-  phone: string;
-  companyName: string;
-  companyCnpj: string;
-  companyWebsite?: string;
-  estimatedValue?: number;
-  source: LeadSource;
-  notes?: string;
-}
+import { Lead, LeadStatus } from '../entity/lead.entity';
+import { LeadCreationFields } from '../entity/types';
 
 export class LeadFactory {
   static create(data: LeadCreationFields): Lead {
