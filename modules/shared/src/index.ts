@@ -9,3 +9,11 @@ export * from './prisma/prisma.service';
 // RabbitMQ
 export * from './rabbitmq/rabbitmq.module';
 export * from './rabbitmq/rabbitmq.constants';
+
+// Value Objects
+export * from './vo/cnpj.vo';
+export * from './vo/phone.vo';
+
+// Exceptions
+export * from './exception/invalid-cnpj.exception';
+export * from './exception/invalid-phone.exception';
