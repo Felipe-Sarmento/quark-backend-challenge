@@ -792,7 +792,7 @@ All implementation tasks follow this **7-phase workflow**:
 - **No code execution without explicit user approval**
 - Plan must include:
   - Which CLAUDE.md rules and architecture patterns apply
-  - Which skills to use (`/controller-builder`, `/e2e-test`, `/unit-test`, `/query-builder`, `/service-builder`, `/git-workflow`, `/changelog`, `/logging`, `/skill-creation`, `/enumerable`)
+  - Which skills to use (`/entity-creation`, `/factory-creation`, `/controller-builder`, `/e2e-test`, `/unit-test`, `/query-builder`, `/service-builder`, `/git-workflow`, `/changelog`, `/logging`, `/skill-creation`, `/enumerable`)
   - Affected files and structure changes
   - Testing strategy (what to test, what not to test)
   - Commit strategy (logical grouping per `/git-workflow`)
@@ -1085,5 +1085,31 @@ For complex features, architectural decisions, or refactoring:
    - Files: Key files affected
    - Tests: Testing strategy
 3. **User decision:** After work completes, ask if they want to **persist** (keep for reference) or **delete** (clean up)
+
+---
+
+## Available Skills
+
+### `/entity-creation`
+**Use when:** Creating a new entity class in the domain layer (`core/entity/`).
+
+Defines:
+- Entity file structure: enums before class, explicit property assignments
+- Constructor accepts typed object (no interface implementation)
+- `[Entity]CreationFields` interface lives in `core/entity/types.ts`
+- Unidirectional imports: `types.ts` → `entity.ts` (never reverse)
+
+**Invoke:** `/entity-creation`
+
+### `/factory-creation`
+**Use when:** Creating a factory class to encapsulate entity instantiation with generated values.
+
+Defines:
+- Factory is static class with single `create(data: [Entity]CreationFields): [Entity]` method
+- Auto-generates system fields: `id`, `status`, `createdAt`, `updatedAt`
+- Explicit property assignments in entity constructor (no spread operator)
+- Factory imported in service layer for entity creation
+
+**Invoke:** `/factory-creation`
 
 ---
