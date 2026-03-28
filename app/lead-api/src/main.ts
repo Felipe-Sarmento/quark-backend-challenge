@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@modules/shared';
 import { LeadApiModule } from './lead-api.module';
 
@@ -7,6 +7,14 @@ async function bootstrap() {
   const app = await NestFactory.create(LeadApiModule);
   const configService = app.get(ConfigService);
   const port = configService.leadApiPort;
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   await app.listen(port);
   Logger.log(`Lead API running on port ${port}`, 'Bootstrap');
