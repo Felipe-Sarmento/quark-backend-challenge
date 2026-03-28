@@ -10,6 +10,9 @@ export * from './prisma/prisma.service';
 export * from './rabbitmq/rabbitmq.module';
 export * from './rabbitmq/rabbitmq.constants';
 
+// Core
+export * from './core/entity';
+
 // Primitives
 export * from './primitives/cnpj';
 export * from './primitives/phone';

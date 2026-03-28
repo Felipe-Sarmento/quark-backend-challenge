@@ -15,7 +15,7 @@ export class LeadService {
   ) {}
 
   async create(data: LeadCreationFields): Promise<Lead> {
-    const lead = LeadFactory.create(data);
+    const lead = LeadFactory.create({ ...data, status: LeadStatus.PENDING });
     return this.repo.create(lead);
   }
 

@@ -1,3 +1,6 @@
+import { Entity } from '@quark/shared';
+import { LeadEntityFields } from './types';
+
 export enum LeadStatus {
   PENDING = 'PENDING',
   ENRICHING = 'ENRICHING',
@@ -15,8 +18,7 @@ export enum LeadSource {
   OTHER = 'OTHER',
 }
 
-export class Lead {
-  id: string;
+export class Lead extends Entity {
   fullName: string;
   email: string;
   phone: string;
@@ -27,25 +29,9 @@ export class Lead {
   source: LeadSource;
   notes?: string;
   status: LeadStatus;
-  createdAt: Date;
-  updatedAt: Date;
 
-  constructor(data: {
-    id: string;
-    fullName: string;
-    email: string;
-    phone: string;
-    companyName: string;
-    companyCnpj: string;
-    companyWebsite?: string;
-    estimatedValue?: number;
-    source: LeadSource;
-    notes?: string;
-    status: LeadStatus;
-    createdAt: Date;
-    updatedAt: Date;
-  }) {
-    this.id = data.id;
+  constructor(data: LeadEntityFields) {
+    super({ id: data.id, createdAt: data.createdAt, updatedAt: data.updatedAt });
     this.fullName = data.fullName;
     this.email = data.email;
     this.phone = data.phone;
@@ -56,7 +42,5 @@ export class Lead {
     this.source = data.source;
     this.notes = data.notes;
     this.status = data.status;
-    this.createdAt = data.createdAt;
-    this.updatedAt = data.updatedAt;
   }
 }

@@ -1,4 +1,4 @@
-import { LeadSource } from './lead.entity';
+import { LeadSource, LeadStatus } from './lead.entity';
 
 export interface LeadCreationFields {
   fullName: string;
@@ -10,4 +10,11 @@ export interface LeadCreationFields {
   estimatedValue?: number;
   source: LeadSource;
   notes?: string;
+}
+
+export interface LeadEntityFields extends LeadCreationFields {
+  id?: string;
+  status: LeadStatus;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
