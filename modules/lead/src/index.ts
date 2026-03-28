@@ -12,3 +12,10 @@ export * from './core/service/lead.service';
 // Queue Producers
 export * from './queue/producer/enrichment-job.queue-producer';
 export * from './queue/producer/classification-job.queue-producer';
+
+// HTTP Layer
+export * from './http/controller/lead.controller';
+export * from './http/dto/create.lead.dto';
+export * from './http/dto/update.lead.dto';
+export * from './http/dto/list-leads.query.dto';
+export * from './http/response/lead.response';
