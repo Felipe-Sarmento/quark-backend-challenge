@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { Page } from '@modules/shared';
 import { Lead, LeadStatus, LeadSource, ILead } from '../entity/lead.entity';
 import {
@@ -23,9 +24,13 @@ export class LeadService {
     source: LeadSource;
     notes?: string;
   }): Promise<Lead> {
+    const now = new Date();
     const lead = new Lead({
       ...data,
+      id: randomUUID(),
       status: LeadStatus.PENDING,
+      createdAt: now,
+      updatedAt: now,
     } as ILead);
     return this.repo.create(lead);
   }
@@ -50,7 +55,7 @@ export class LeadService {
     if (!existing) {
       throw new Error(`Lead with ID ${id} not found`);
     }
-    return this.repo.update(Object.assign(existing, data));
+    return this.repo.update(Object.assign(existing, data, { updatedAt: new Date() }));
   }
 
   async updateStatus(id: string, status: LeadStatus): Promise<Lead> {
@@ -58,7 +63,7 @@ export class LeadService {
     if (!lead) {
       throw new Error(`Lead with ID ${id} not found`);
     }
-    return this.repo.update(Object.assign(lead, { status }));
+    return this.repo.update(Object.assign(lead, { status, updatedAt: new Date() }));
   }
 
   async delete(id: string): Promise<void> {

@@ -8,19 +8,21 @@ export class LeadRepository implements ILeadRepository {
   constructor(private prisma: PrismaService) {}
 
   async create(lead: Lead): Promise<Lead> {
-    const { fullName, email, phone, companyName, companyCnpj, companyWebsite, estimatedValue, source, notes, status } = lead;
     const created = await this.prisma.lead.create({
       data: {
-        fullName,
-        email,
-        phone,
-        companyName,
-        companyCnpj,
-        companyWebsite,
-        estimatedValue,
-        source,
-        notes,
-        status,
+        id: lead.id,
+        fullName: lead.fullName,
+        email: lead.email,
+        phone: lead.phone,
+        companyName: lead.companyName,
+        companyCnpj: lead.companyCnpj,
+        companyWebsite: lead.companyWebsite,
+        estimatedValue: lead.estimatedValue,
+        source: lead.source,
+        notes: lead.notes,
+        status: lead.status,
+        createdAt: lead.createdAt,
+        updatedAt: lead.updatedAt,
       },
     });
 

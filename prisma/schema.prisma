@@ -11,7 +11,7 @@ datasource db {
 }
 
 model Lead {
-  id                String   @id @default(cuid())
+  id                String   @id
   fullName          String
   email             String   @unique
   phone             String   @db.VarChar(20)
@@ -23,9 +23,9 @@ model Lead {
   notes             String?
 
   // Status tracking
-  status            LeadStatus @default(PENDING)
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  status            LeadStatus
+  createdAt         DateTime
+  updatedAt         DateTime
 
   // Relations
   enrichments       Enrichment[]
