@@ -30,4 +30,8 @@ export class LeadResponse {
     this.createdAt = lead.createdAt;
     this.updatedAt = lead.updatedAt;
   }
+
+  static fromDomain(lead: Lead): LeadResponse {
+    return new LeadResponse(lead);
+  }
 }

@@ -64,7 +64,7 @@ export class LeadController {
     const { leads, totalItems } = await this.leadService.list(page);
     const enrichedPage = page.withTotals(totalItems);
     return new LeadListResponse(
-      leads.map((lead) => new LeadResponse(lead)),
+      leads.map((lead) => LeadResponse.fromDomain(lead)),
       enrichedPage,
     );
   }
@@ -75,7 +75,7 @@ export class LeadController {
     if (!lead) {
       throw new NotFoundException(`Lead with ID ${id} not found`);
     }
-    return new LeadResponse(lead);
+    return LeadResponse.fromDomain(lead);
   }
 
   @Patch(':id')
@@ -85,7 +85,7 @@ export class LeadController {
   ): Promise<LeadResponse> {
     try {
       const lead = await this.leadService.update(id, updateLeadDto);
-      return new LeadResponse(lead);
+      return LeadResponse.fromDomain(lead);
     } catch (error: unknown) {
       const prismaError = error as { code?: string; meta?: { target?: string[] } };
       // Prisma record not found error (P2025)
