@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService, Page } from '@modules/shared';
 import { Lead } from '../core/entity/lead.entity';
+import { LeadFactory } from '../core/factory/lead.factory';
 import { ILeadRepository } from '../core/interface/lead.repository.interface';
 
 @Injectable()
@@ -26,17 +27,17 @@ export class LeadRepository implements ILeadRepository {
       },
     });
 
-    return new Lead(created as any);
+    return LeadFactory.create(created as any);
   }
 
   async findById(id: string): Promise<Lead | null> {
     const lead = await this.prisma.lead.findUnique({ where: { id } });
-    return lead ? new Lead(lead as any) : null;
+    return lead ? LeadFactory.create(lead as any) : null;
   }
 
   async findByEmail(email: string): Promise<Lead | null> {
     const lead = await this.prisma.lead.findUnique({ where: { email } });
-    return lead ? new Lead(lead as any) : null;
+    return lead ? LeadFactory.create(lead as any) : null;
   }
 
   async list(page: Page): Promise<{ leads: Lead[]; totalItems: number }> {
@@ -49,7 +50,7 @@ export class LeadRepository implements ILeadRepository {
       this.prisma.lead.count(),
     ]);
 
-    return { leads: leads.map((l) => new Lead(l as any)), totalItems };
+    return { leads: leads.map((l) => LeadFactory.create(l as any)), totalItems };
   }
 
   async update(lead: Lead): Promise<Lead> {
@@ -59,7 +60,7 @@ export class LeadRepository implements ILeadRepository {
       data,
     });
 
-    return new Lead(updated as any);
+    return LeadFactory.create(updated as any);
   }
 
   async delete(id: string): Promise<void> {
