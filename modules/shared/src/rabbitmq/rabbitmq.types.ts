@@ -6,8 +6,8 @@ export interface DlqPayload<T> {
   workerName: string;
 }
 
-export function computeRetryDelayMs(retryCount: number, capMs = 30_000): number {
-  return Math.min(1000 * Math.pow(2, retryCount - 1), capMs);
+export function computeRetryDelayMs(retryCount: number, capMs = 3_000): number {
+  return Math.min(500 * Math.pow(2, retryCount - 1), capMs);
 }
 
 export function sleep(ms: number): Promise<void> {
