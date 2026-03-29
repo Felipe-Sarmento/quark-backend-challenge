@@ -28,7 +28,7 @@ export class LeadController {
   @HttpCode(HttpStatus.OK)
   async create(@Body() createLeadDto: CreateLeadDto): Promise<CreateLeadResponse> {
     await this.leadService.create(createLeadDto);
-    return new CreateLeadResponse();
+    return CreateLeadResponse.create();
   }
 
   @Get()
