@@ -10,13 +10,13 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { PageQueryDto } from '@modules/shared';
 import { LeadService } from '../../core/service/lead.service';
 import { CreateLeadDto } from '../dto/create.lead.dto';
 import { UpdateLeadDto } from '../dto/update.lead.dto';
 import { LeadResponse } from '../response/lead.response';
 import { LeadListResponse } from '../response/lead-list.response';
 import { CreateLeadResponse } from '../response/create-lead.response';
+import { PageQueryDto } from '@modules/shared/http/dto/page.query.dto';
 
 @Controller('leads')
 export class LeadController {
@@ -27,9 +27,7 @@ export class LeadController {
   @Post()
   @HttpCode(HttpStatus.OK)
   async create(@Body() createLeadDto: CreateLeadDto): Promise<CreateLeadResponse> {
-    try {
-      await this.leadService.create(createLeadDto);
-    } catch {}
+    await this.leadService.create(createLeadDto);
     return new CreateLeadResponse();
   }
 

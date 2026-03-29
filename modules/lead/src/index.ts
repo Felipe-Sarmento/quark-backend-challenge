@@ -17,5 +17,4 @@ export * from './queue/producer/classification-job.queue-producer';
 export * from './http/controller/lead.controller';
 export * from './http/dto/create.lead.dto';
 export * from './http/dto/update.lead.dto';
-export * from './http/dto/list-leads.query.dto';
 export * from './http/response/lead.response';
