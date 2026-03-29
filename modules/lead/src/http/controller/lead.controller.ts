@@ -15,7 +15,6 @@ import { CreateLeadDto } from '../dto/create.lead.dto';
 import { UpdateLeadDto } from '../dto/update.lead.dto';
 import { LeadResponse } from '../response/lead.response';
 import { LeadListResponse } from '../response/lead-list.response';
-import { CreateLeadResponse } from '../response/create-lead.response';
 import { PageQueryDto } from '@modules/shared/http/dto/page.query.dto';
 
 @Controller('leads')
@@ -24,9 +23,9 @@ export class LeadController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  async create(@Body() createLeadDto: CreateLeadDto): Promise<CreateLeadResponse> {
-    await this.leadService.create(createLeadDto);
-    return CreateLeadResponse.create();
+  async create(@Body() createLeadDto: CreateLeadDto): Promise<LeadResponse> {
+    const lead = await this.leadService.create(createLeadDto);
+    return LeadResponse.fromDomain(lead);
   }
 
   @Get()
