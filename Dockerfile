@@ -26,5 +26,5 @@ RUN pnpm prisma:generate
 ARG APP
 ENV APP=${APP}
 
-# Runtime: ts-node with tsconfig-paths so @modules/* aliases resolve
-CMD ["sh", "-c", "node -r tsconfig-paths/register -r ts-node/register/transpile-only app/${APP}/src/main.ts"]
+# Runtime: run migrations (if app is lead-api or enrichment that use database), then start the app
+CMD ["sh", "-c", "if [ \"$APP\" = \"lead-api\" ] || [ \"$APP\" = \"enrichment\" ]; then pnpm prisma migrate deploy; fi && node -r tsconfig-paths/register -r ts-node/register/transpile-only app/${APP}/src/main.ts"]

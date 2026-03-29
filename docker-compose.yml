@@ -75,6 +75,9 @@ services:
     container_name: lead-api
     network_mode: host
     env_file: .env
+    depends_on:
+      quark-database:
+        condition: service_healthy
 
   enrichment:
     build:
@@ -84,6 +87,9 @@ services:
     container_name: enrichment-worker
     network_mode: host
     env_file: .env
+    depends_on:
+      quark-database:
+        condition: service_healthy
 
 volumes:
   postgres_data:
