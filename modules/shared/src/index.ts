@@ -10,6 +10,7 @@ export * from './prisma/prisma.error-codes';
 // RabbitMQ
 export * from './rabbitmq/rabbitmq.module';
 export * from './rabbitmq/rabbitmq.constants';
+export * from './rabbitmq/rabbitmq.types';
 
 // Core
 export * from './core/entity';

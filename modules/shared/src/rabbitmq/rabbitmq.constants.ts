@@ -1,8 +1,10 @@
 export const RABBITMQ_QUEUES = {
   ENRICHMENT_TRIGGER: 'enrichment-trigger',
   ENRICHMENT_RESULT: 'enrichment-result',
+  ENRICHMENT_DLQ: 'enrichment-trigger.dlq',
   CLASSIFICATION_TRIGGER: 'classification-trigger',
   CLASSIFICATION_RESULT: 'classification-result',
+  CLASSIFICATION_DLQ: 'classification-trigger.dlq',
 };
 
 export const RABBITMQ_EXCHANGES = {
