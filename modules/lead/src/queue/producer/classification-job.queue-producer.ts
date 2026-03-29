@@ -10,6 +10,7 @@ export interface ClassificationJobPayload {
   companyCnpj: string;
   estimatedValue?: number;
   notes?: string;
+  retryCount?: number;
 }
 
 @Injectable()

@@ -4,6 +4,7 @@ import { RABBITMQ_QUEUES } from '@modules/shared';
 
 export interface EnrichmentJobPayload {
   leadId: string;
+  retryCount?: number;
 }
 
 @Injectable()
