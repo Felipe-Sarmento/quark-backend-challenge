@@ -192,6 +192,27 @@ describe('LeadController (e2e)', () => {
       // Assert
       expect(response.status).toBe(400);
     });
+
+    it('should return 400 when companyWebsite is an invalid URL', async () => {
+      // Arrange
+      const invalidDto = {
+        fullName: faker.person.fullName(),
+        email: faker.internet.email(),
+        phone: faker.phone.number({ style: 'national' }),
+        companyName: faker.company.name(),
+        companyCnpj: faker.string.numeric(14),
+        companyWebsite: 'not-a-url',
+        source: 'WEBSITE',
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post('/leads')
+        .send(invalidDto);
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
   });
 
   describe('GET /leads', () => {
@@ -429,6 +450,38 @@ describe('LeadController (e2e)', () => {
       const updateDto = {
         fullName: faker.person.fullName(),
         companyCnpj: faker.string.numeric(14), // Not allowed in UpdateLeadDto
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .patch(`/leads/${createdLead.id}`)
+        .send(updateDto);
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 when companyWebsite is an invalid URL', async () => {
+      // Arrange
+      const now = new Date();
+      const createdLead = await prisma.lead.create({
+        data: {
+          id: randomUUID(),
+          fullName: faker.person.fullName(),
+          email: faker.internet.email(),
+          phone: faker.phone.number({ style: 'national' }),
+          companyName: faker.company.name(),
+          companyCnpj: faker.string.numeric(14),
+          source: 'WEBSITE',
+          status: 'PENDING',
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+
+      const updateDto = {
+        fullName: faker.person.fullName(),
+        companyWebsite: 'not-a-url',
       };
 
       // Act
