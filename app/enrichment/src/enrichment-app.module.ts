@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AppConfigModule } from '@modules/shared';
-import { EnrichmentModule } from '@modules/enrichment';
+import { EnrichmentQueueModule } from '@modules/enrichment';
 
 @Module({
-  imports: [AppConfigModule, EnrichmentModule],
+  imports: [AppConfigModule, EnrichmentQueueModule],
 })
 export class EnrichmentAppModule {}

@@ -1,11 +1,11 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Controller, Logger, Inject } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { RABBITMQ_QUEUES } from '@modules/shared';
 import { EnrichmentJobPayload, LeadPublicApi } from '@modules/lead';
 import { EnrichmentService } from '../../core/service/enrichment.service';
 import { MockApiClient } from '../../http/client/mock-api.client';
 
-@Injectable()
+@Controller()
 export class EnrichmentQueueConsumer {
   private readonly logger = new Logger(EnrichmentQueueConsumer.name);
 

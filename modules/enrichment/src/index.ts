@@ -1,8 +1,12 @@
-// Module
+// Modules
 export * from './enrichment.module';
+export * from './queue/enrichment-queue.module';
 
 // Services
 export * from './core/service/enrichment.service';
+
+// HTTP Controllers
+export * from './http/controller/lead.enrichment.controller';
 
 // HTTP Clients
 export * from './http/client/mock-api.client';
