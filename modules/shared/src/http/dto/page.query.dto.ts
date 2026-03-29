@@ -1,5 +1,6 @@
-import { IsOptional, IsInt, Min, Max, Type } from 'class-validator';
+import { IsOptional, IsInt, Min, Max } from 'class-validator';
 import { Page } from '../../primitives/page';
+import { Type } from 'class-transformer';
 
 export class PageQueryDto {
   @IsOptional()
