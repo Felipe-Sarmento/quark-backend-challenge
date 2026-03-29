@@ -9,6 +9,7 @@ import {
   IEnrichmentRepository,
 } from './core/interface/enrichment.repository.interface';
 import { LeadEnrichmentController } from './http/controller/lead.enrichment.controller';
+import { EnrichmentPublicApi, EnrichmentPublicApiProvider } from './integration/index';
 
 @Module({
   imports: [HttpModule, AppConfigModule, PrismaModule, RabbitmqModule, LeadModule],
@@ -21,7 +22,12 @@ import { LeadEnrichmentController } from './http/controller/lead.enrichment.cont
       provide: IEnrichmentRepository,
       useClass: EnrichmentPrismaRepository,
     },
+    EnrichmentPublicApiProvider,
+    {
+      provide: EnrichmentPublicApi,
+      useClass: EnrichmentPublicApiProvider,
+    },
   ],
-  exports: [EnrichmentService, MockApiClient],
+  exports: [EnrichmentService, MockApiClient, EnrichmentPublicApi],
 })
 export class EnrichmentModule {}

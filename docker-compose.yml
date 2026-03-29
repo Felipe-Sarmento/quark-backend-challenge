@@ -91,6 +91,20 @@ services:
       quark-database:
         condition: service_healthy
 
+  classification:
+    build:
+      context: .
+      args:
+        APP: classification
+    container_name: classification-worker
+    network_mode: host
+    env_file: .env
+    depends_on:
+      quark-database:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   ollama_data:

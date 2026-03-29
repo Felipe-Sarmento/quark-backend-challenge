@@ -34,8 +34,8 @@
       "@modules/lead/*": ["modules/lead/src/*"],
       "@modules/enrichment": ["modules/enrichment/src/index.ts"],
       "@modules/enrichment/*": ["modules/enrichment/src/*"],
-      "@modules/extraction": ["modules/extraction/src/index.ts"],
-      "@modules/extraction/*": ["modules/extraction/src/*"],
+      "@modules/classification": ["modules/classification/src/index.ts"],
+      "@modules/classification/*": ["modules/classification/src/*"],
       "@modules/mock-api": ["modules/mock-api/src/index.ts"],
       "@modules/mock-api/*": ["modules/mock-api/src/*"],
       "@test/*": ["test/*"]

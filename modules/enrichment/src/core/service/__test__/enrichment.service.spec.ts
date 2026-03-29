@@ -10,6 +10,7 @@ describe('EnrichmentService', () => {
     updateSuccess: vi.fn(),
     updateError: vi.fn(),
     findLatestByLeadId: vi.fn(),
+    listByLeadId: vi.fn(),
   };
 
   beforeEach(() => {
@@ -131,6 +132,50 @@ describe('EnrichmentService', () => {
       // Assert
       expect(mockRepository.findLatestByLeadId).toHaveBeenCalledWith(leadId);
       expect(result).toBeNull();
+    });
+  });
+
+  describe('listByLeadId', () => {
+    it('should return enrichments for a lead', async () => {
+      // Arrange
+      const leadId = 'lead-uuid-123';
+      const enrichmentA = createMockEnrichment({
+        id: 'enrichment-uuid-1',
+        leadId,
+        status: EnrichmentStatus.SUCCESS,
+        completedAt: new Date(),
+      });
+      const enrichmentB = createMockEnrichment({
+        id: 'enrichment-uuid-2',
+        leadId,
+        status: EnrichmentStatus.PROCESSING,
+      });
+      (mockRepository.listByLeadId as any).mockResolvedValue([enrichmentA, enrichmentB]);
+
+      // Act
+      const result = await service.listByLeadId(leadId);
+
+      // Assert
+      expect(mockRepository.listByLeadId).toHaveBeenCalledWith(leadId);
+      expect(result).toHaveLength(2);
+      expect(result[0]).toBeInstanceOf(Enrichment);
+      expect(result[1]).toBeInstanceOf(Enrichment);
+      expect(result[0]?.id).toBe(enrichmentA.id);
+      expect(result[1]?.id).toBe(enrichmentB.id);
+    });
+
+    it('should return empty array when no enrichments exist for a lead', async () => {
+      // Arrange
+      const leadId = 'lead-uuid-123';
+      (mockRepository.listByLeadId as any).mockResolvedValue([]);
+
+      // Act
+      const result = await service.listByLeadId(leadId);
+
+      // Assert
+      expect(mockRepository.listByLeadId).toHaveBeenCalledWith(leadId);
+      expect(result).toEqual([]);
+      expect(result).toHaveLength(0);
     });
   });
 });

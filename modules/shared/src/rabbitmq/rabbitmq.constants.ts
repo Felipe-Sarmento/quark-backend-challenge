@@ -1,4 +1,8 @@
 export const RABBITMQ_QUEUES = {
+  // Worker queues (each worker has its own)
+  ENRICHMENT_WORKER_QUEUE: 'enrichment-queue',
+  CLASSIFICATION_WORKER_QUEUE: 'classification-queue',
+  // Event triggers (used by producers)
   ENRICHMENT_TRIGGER: 'enrichment-trigger',
   ENRICHMENT_RESULT: 'enrichment-result',
   ENRICHMENT_DLQ: 'enrichment-trigger.dlq',

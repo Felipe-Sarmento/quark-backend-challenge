@@ -5,7 +5,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { faker } from '@faker-js/faker';
-import { LeadController, LeadService, LeadPublicApi } from '../../../index';
+import { LeadController, LeadService, LeadPublicApi, Enrichment, EnrichmentStatus } from '../../../index';
 import { ILeadRepository } from '../../../core/interface/lead.repository.interface';
 import { LeadPrismaRepository } from '../../../persistence/lead.prisma.repository';
 import { EnrichmentJobQueueProducer } from '../../../queue/producer/enrichment-job.queue-producer';
@@ -683,13 +683,79 @@ describe('LeadController (e2e)', () => {
   });
 
   describe('GET /leads/:id/enrichments', () => {
-    it.skip('should list enrichments for lead', async () => {
-      // TODO: Implement after enrichment listing is finalized
+    it('should return enrichments sorted newest first', async () => {
+      // Arrange
+      const now = new Date();
+      const createdLead = await prisma.lead.create({
+        data: {
+          id: randomUUID(),
+          fullName: faker.person.fullName(),
+          email: faker.internet.email(),
+          phone: faker.phone.number({ style: 'national' }),
+          companyName: faker.company.name(),
+          companyCnpj: faker.string.numeric(14),
+          source: 'WEBSITE',
+          status: 'PENDING',
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+
+      const olderDate = new Date(now.getTime() - 60000); // 1 minute earlier
+      const enrichmentA = new Enrichment({
+        id: randomUUID(),
+        leadId: createdLead.id,
+        status: EnrichmentStatus.SUCCESS,
+        requestedAt: new Date(now.getTime() - 30000),
+        completedAt: now,
+        createdAt: now,
+        updatedAt: now,
+        enrichmentData: { cnpj: '12345678000195', legalName: 'Acme Corp' },
+      });
+
+      const enrichmentB = new Enrichment({
+        id: randomUUID(),
+        leadId: createdLead.id,
+        status: EnrichmentStatus.SUCCESS,
+        requestedAt: new Date(olderDate.getTime() - 30000),
+        completedAt: olderDate,
+        createdAt: olderDate,
+        updatedAt: olderDate,
+        enrichmentData: { cnpj: '98765432000123', legalName: 'Old Company' },
+      });
+
+      const mockEnrichmentService = app.get(EnrichmentService);
+      (mockEnrichmentService.listByLeadId as any).mockResolvedValueOnce([enrichmentA, enrichmentB]);
+
       // Act
-      const response = await request(app.getHttpServer()).get(`/leads/${faker.string.uuid()}/enrichments`);
+      const response = await request(app.getHttpServer()).get(`/leads/${createdLead.id}/enrichments`);
 
       // Assert
       expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(2);
+      expect(response.body[0].id).toBe(enrichmentA.id);
+      expect(response.body[1].id).toBe(enrichmentB.id);
+      expect(mockEnrichmentService.listByLeadId).toHaveBeenCalledWith(createdLead.id);
+    });
+
+    it('should return empty array when lead does not exist', async () => {
+      // Arrange
+      const nonExistentId = faker.string.uuid();
+
+      // Act
+      const response = await request(app.getHttpServer()).get(`/leads/${nonExistentId}/enrichments`);
+
+      // Assert
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual([]);
+    });
+
+    it('should return 400 when id is not a valid UUID', async () => {
+      // Act
+      const response = await request(app.getHttpServer()).get('/leads/not-a-uuid/enrichments');
+
+      // Assert
+      expect(response.status).toBe(400);
     });
   });
 });

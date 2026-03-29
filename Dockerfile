@@ -26,5 +26,5 @@ RUN pnpm prisma:generate
 ARG APP
 ENV APP=${APP}
 
-# Runtime: run migrations (if app is lead-api or enrichment that use database), then start the app
-CMD ["sh", "-c", "if [ \"$APP\" = \"lead-api\" ] || [ \"$APP\" = \"enrichment\" ]; then pnpm prisma migrate deploy; fi && node -r tsconfig-paths/register -r ts-node/register/transpile-only app/${APP}/src/main.ts"]
+# Runtime: run migrations (if app is lead-api, enrichment, or classification that use database), then start the app
+CMD ["sh", "-c", "if [ \"$APP\" = \"lead-api\" ] || [ \"$APP\" = \"enrichment\" ] || [ \"$APP\" = \"classification\" ]; then pnpm prisma migrate deploy; fi && node -r tsconfig-paths/register -r ts-node/register/transpile-only app/${APP}/src/main.ts"]

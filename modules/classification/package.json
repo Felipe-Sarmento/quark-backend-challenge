@@ -1,8 +1,8 @@
 {
-  "name": "@quark/extraction",
+  "name": "@quark/classification",
   "version": "0.0.1",
   "private": true,
-  "description": "Extraction (classification) domain module",
+  "description": "Classification domain module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "files": ["src"],
@@ -18,6 +18,7 @@
     "@prisma/client": "^5.9.0",
     "@quark/shared": "workspace:*",
     "@quark/lead": "workspace:*",
+    "@quark/enrichment": "workspace:*",
     "axios": "^1.6.0"
   },
   "devDependencies": {

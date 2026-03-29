@@ -18,7 +18,7 @@ export class EnrichmentQueueConsumer {
     private enrichmentService: EnrichmentService,
     private mockApiClient: MockApiClient,
     @Inject(LeadPublicApi) private leadPublicApi: LeadPublicApi,
-    @Inject('RABBITMQ_SERVICE') private retryClient: ClientProxy,
+    @Inject('ENRICHMENT_RETRY_CLIENT') private retryClient: ClientProxy,
     @Inject('ENRICHMENT_DLQ_CLIENT') private dlqClient: ClientProxy,
   ) {}
 

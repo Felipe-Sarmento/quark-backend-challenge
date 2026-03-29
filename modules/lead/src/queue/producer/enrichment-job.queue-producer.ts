@@ -10,7 +10,7 @@ export interface EnrichmentJobPayload {
 @Injectable()
 export class EnrichmentJobQueueProducer {
   constructor(
-    @Inject('RABBITMQ_SERVICE')
+    @Inject('ENRICHMENT_SERVICE')
     private client: ClientProxy,
   ) {}
 

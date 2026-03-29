@@ -24,7 +24,7 @@ export class ClassificationQueueConsumer {
     private ollamaClient: OllamaClient,
     @Inject(EnrichmentPublicApi) private enrichmentPublicApi: EnrichmentPublicApi,
     @Inject(LeadPublicApi) private leadPublicApi: LeadPublicApi,
-    @Inject('RABBITMQ_SERVICE') private retryClient: ClientProxy,
+    @Inject('CLASSIFICATION_RETRY_CLIENT') private retryClient: ClientProxy,
     @Inject('CLASSIFICATION_DLQ_CLIENT') private dlqClient: ClientProxy,
   ) {}
 

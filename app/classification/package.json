@@ -1,8 +1,8 @@
 {
-  "name": "extraction",
+  "name": "classification",
   "version": "0.0.1",
   "private": true,
-  "description": "Extraction (classification) worker application",
+  "description": "Classification worker application",
   "main": "dist/main.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
@@ -16,7 +16,8 @@
     "@nestjs/core": "^10.3.0",
     "@nestjs/microservices": "^10.3.0",
     "@quark/shared": "workspace:*",
-    "@quark/extraction": "workspace:*",
+    "@quark/classification": "workspace:*",
+    "@quark/enrichment": "workspace:*",
     "axios": "^1.6.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1"

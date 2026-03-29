@@ -16,7 +16,7 @@ export interface ClassificationJobPayload {
 @Injectable()
 export class ClassificationJobQueueProducer {
   constructor(
-    @Inject('RABBITMQ_SERVICE')
+    @Inject('CLASSIFICATION_SERVICE')
     private client: ClientProxy,
   ) {}
 
