@@ -8,6 +8,8 @@ import {
 import { EnrichmentJobQueueProducer } from './queue/producer/enrichment-job.queue-producer';
 import { ClassificationJobQueueProducer } from './queue/producer/classification-job.queue-producer';
 import { LeadController } from './http/controller/lead.controller';
+import { LeadPublicApi } from './integration/interface/lead.public-api.interface';
+import { LeadPublicApiModuleProvider } from './integration/provider/lead.public-api.module.provider';
 
 @Module({
   imports: [PrismaModule, RabbitmqModule],
@@ -20,7 +22,12 @@ import { LeadController } from './http/controller/lead.controller';
     LeadService,
     EnrichmentJobQueueProducer,
     ClassificationJobQueueProducer,
+    LeadPublicApiModuleProvider,
+    {
+      provide: LeadPublicApi,
+      useClass: LeadPublicApiModuleProvider,
+    },
   ],
-  exports: [LeadService, EnrichmentJobQueueProducer, ClassificationJobQueueProducer],
+  exports: [LeadService, EnrichmentJobQueueProducer, ClassificationJobQueueProducer, LeadPublicApi],
 })
 export class LeadModule {}

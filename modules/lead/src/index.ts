@@ -18,3 +18,8 @@ export * from './http/controller/lead.controller';
 export * from './http/dto/create.lead.dto';
 export * from './http/dto/update.lead.dto';
 export * from './http/response/lead.response';
+
+// Integration / Public API
+export * from './integration/interface/lead.public-api.interface';
+export * from './integration/provider/lead.public-api.module.provider';
+export * from './integration/provider/lead.public-api.http.provider';
