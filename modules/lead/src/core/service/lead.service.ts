@@ -49,7 +49,8 @@ export class LeadService {
 
   async updateStatus(id: string, status: LeadStatus): Promise<Lead> {
     const lead = await this.findById(id);
-    return this.repo.update(Object.assign(lead, { status, updatedAt: new Date() }));
+    lead.status = status;
+    return this.repo.update(lead);
   }
 
   async delete(id: string): Promise<void> {

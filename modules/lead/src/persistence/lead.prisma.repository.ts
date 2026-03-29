@@ -65,11 +65,23 @@ export class LeadPrismaRepository implements ILeadRepository {
   }
 
   async update(lead: Lead): Promise<Lead> {
-    const { id, createdAt: _createdAt, updatedAt: _updatedAt, ...data } = lead;
+    const { id } = lead;
     try {
       const updated = await this.prisma.lead.update({
         where: { id },
-        data,
+        data: {
+          fullName: lead.fullName,
+          email: lead.email,
+          phone: lead.phone,
+          companyName: lead.companyName,
+          companyCnpj: lead.companyCnpj,
+          companyWebsite: lead.companyWebsite,
+          estimatedValue: lead.estimatedValue,
+          source: lead.source,
+          notes: lead.notes,
+          status: lead.status,
+          updatedAt: new Date(),
+        },
       });
 
       return LeadFactory.create(updated as any);
