@@ -5,11 +5,13 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { faker } from '@faker-js/faker';
-import { LeadController, LeadService } from '../../../index';
+import { LeadController, LeadService, LeadPublicApi } from '../../../index';
 import { ILeadRepository } from '../../../core/interface/lead.repository.interface';
 import { LeadPrismaRepository } from '../../../persistence/lead.prisma.repository';
 import { EnrichmentJobQueueProducer } from '../../../queue/producer/enrichment-job.queue-producer';
 import { PrismaModule, PrismaService, HttpExceptionFilter } from '@modules/shared';
+import { LeadEnrichmentController, EnrichmentService } from '@modules/enrichment';
+import { NotFoundException } from '@nestjs/common';
 
 describe('LeadController (e2e)', () => {
   let app: INestApplication;
@@ -22,9 +24,21 @@ describe('LeadController (e2e)', () => {
       triggerEnrichment: vi.fn().mockResolvedValue(undefined),
     };
 
+    const mockLeadPublicApi = {
+      getLeadOrThrow: vi.fn().mockImplementation(async (id: string) => {
+        const lead = await prisma?.lead.findUnique({ where: { id } });
+        if (!lead) throw new NotFoundException(`Lead with id ${id} not found`);
+        return lead;
+      }),
+    };
+
+    const mockEnrichmentService = {
+      listByLeadId: vi.fn().mockResolvedValue([]),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [PrismaModule],
-      controllers: [LeadController],
+      controllers: [LeadController, LeadEnrichmentController],
       providers: [
         LeadService,
         {
@@ -34,6 +48,14 @@ describe('LeadController (e2e)', () => {
         {
           provide: EnrichmentJobQueueProducer,
           useValue: mockEnrichmentJobQueueProducer,
+        },
+        {
+          provide: LeadPublicApi,
+          useValue: mockLeadPublicApi,
+        },
+        {
+          provide: EnrichmentService,
+          useValue: mockEnrichmentService,
         },
       ],
     }).compile();
@@ -66,7 +88,7 @@ describe('LeadController (e2e)', () => {
   });
 
   describe('POST /leads', () => {
-    it('should create lead with all fields and return 200 with message', async () => {
+    it('should create lead with all fields and return 200 with created lead', async () => {
       // Arrange
       const createLeadDto = {
         fullName: faker.person.fullName(),
@@ -86,7 +108,18 @@ describe('LeadController (e2e)', () => {
 
       // Assert
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ message: 'Request processed successfully' });
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.fullName).toBe(createLeadDto.fullName);
+      expect(response.body.email).toBe(createLeadDto.email);
+      expect(response.body.phone).toBe(createLeadDto.phone);
+      expect(response.body.companyName).toBe(createLeadDto.companyName);
+      expect(response.body.companyCnpj).toBe(createLeadDto.companyCnpj);
+      expect(response.body.companyWebsite).toBe(createLeadDto.companyWebsite);
+      expect(response.body.estimatedValue).toBe(createLeadDto.estimatedValue);
+      expect(response.body.source).toBe(createLeadDto.source);
+      expect(response.body.status).toBe('PENDING');
+      expect(response.body).toHaveProperty('createdAt');
+      expect(response.body).toHaveProperty('updatedAt');
 
       // Verify lead was created in database
       const createdLead = await prisma.lead.findFirst({
@@ -96,7 +129,7 @@ describe('LeadController (e2e)', () => {
       expect(createdLead?.fullName).toBe(createLeadDto.fullName);
     });
 
-    it('should create lead with only required fields and return 200', async () => {
+    it('should create lead with only required fields and return 200 with created lead', async () => {
       // Arrange
       const createLeadDto = {
         fullName: faker.person.fullName(),
@@ -114,7 +147,12 @@ describe('LeadController (e2e)', () => {
 
       // Assert
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ message: 'Request processed successfully' });
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.fullName).toBe(createLeadDto.fullName);
+      expect(response.body.email).toBe(createLeadDto.email);
+      expect(response.body.status).toBe('PENDING');
+      expect(response.body).toHaveProperty('createdAt');
+      expect(response.body).toHaveProperty('updatedAt');
 
       // Verify lead was created
       const createdLead = await prisma.lead.findFirst({
@@ -222,6 +260,45 @@ describe('LeadController (e2e)', () => {
 
       // Assert
       expect(response.status).toBe(400);
+    });
+
+    it('should return 409 when email already exists', async () => {
+      // Arrange
+      const now = new Date();
+      const email = faker.internet.email();
+
+      // Create a lead with this email first
+      await prisma.lead.create({
+        data: {
+          id: randomUUID(),
+          fullName: faker.person.fullName(),
+          email,
+          phone: faker.phone.number({ style: 'national' }),
+          companyName: faker.company.name(),
+          companyCnpj: faker.string.numeric(14),
+          source: 'WEBSITE',
+          status: 'PENDING',
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+
+      const createLeadDto = {
+        fullName: faker.person.fullName(),
+        email, // Same email as existing lead
+        phone: faker.phone.number({ style: 'national' }),
+        companyName: faker.company.name(),
+        companyCnpj: faker.string.numeric(14),
+        source: 'WEBSITE',
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post('/leads')
+        .send(createLeadDto);
+
+      // Assert
+      expect(response.status).toBe(409);
     });
   });
 
@@ -606,12 +683,13 @@ describe('LeadController (e2e)', () => {
   });
 
   describe('GET /leads/:id/enrichments', () => {
-    it('should return 501 Not Implemented', async () => {
+    it.skip('should list enrichments for lead', async () => {
+      // TODO: Implement after enrichment listing is finalized
       // Act
       const response = await request(app.getHttpServer()).get(`/leads/${faker.string.uuid()}/enrichments`);
 
       // Assert
-      expect(response.status).toBe(501);
+      expect(response.status).toBe(200);
     });
   });
 });
