@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule, RabbitmqModule } from '@modules/shared';
 import { LeadService } from './core/service/lead.service';
-import { LeadRepository } from './persistence/lead.repository';
+import { LeadPrismaRepository } from './persistence/lead.prisma.repository';
 import {
   ILeadRepository,
 } from './core/interface/lead.repository.interface';
@@ -15,7 +15,7 @@ import { LeadController } from './http/controller/lead.controller';
   providers: [
     {
       provide: ILeadRepository,
-      useClass: LeadRepository,
+      useClass: LeadPrismaRepository,
     },
     LeadService,
     EnrichmentJobQueueProducer,
