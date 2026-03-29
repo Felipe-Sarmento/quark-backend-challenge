@@ -1,4 +1,5 @@
-// Setup for Vitest - ensure class-transformer is properly loaded
+// Setup for Vitest - ensure class-transformer and class-validator are properly loaded
 import 'reflect-metadata';
-// This import ensures all class-transformer decorators are properly loaded before tests run
+// These imports ensure all decorators are properly loaded before tests run
 import 'class-transformer';
+import 'class-validator';
