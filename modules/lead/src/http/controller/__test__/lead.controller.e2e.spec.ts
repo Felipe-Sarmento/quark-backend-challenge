@@ -10,11 +10,11 @@ import { ILeadRepository } from '../../../core/interface/lead.repository.interfa
 import { LeadPrismaRepository } from '../../../persistence/lead.prisma.repository';
 import { PrismaModule, PrismaService, HttpExceptionFilter } from '@modules/shared';
 
-faker.seed(42);
-
 describe('LeadController (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  
+  faker.seed(42);
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -41,9 +41,13 @@ describe('LeadController (e2e)', () => {
     await app.init();
 
     prisma = module.get(PrismaService);
+
+    // Ensure clean state before suite starts (prevents flake from previous interrupted runs)
+    await prisma.lead.deleteMany();
   });
 
   afterAll(async () => {
+    await prisma.lead.deleteMany();
     await app.close();
   });
 
