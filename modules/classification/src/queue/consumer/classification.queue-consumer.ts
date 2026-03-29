@@ -3,7 +3,6 @@ import { EventPattern, Payload, ClientProxy } from '@nestjs/microservices';
 import {
   RABBITMQ_QUEUES,
   DlqPayload,
-  computeRetryDelayMs,
   sleep,
 } from '@modules/shared';
 import { ClassificationJobPayload, LeadPublicApi, LeadStatus } from '@modules/lead';
@@ -18,7 +17,7 @@ import {
 @Controller()
 export class ClassificationQueueConsumer {
   private readonly logger = new Logger(ClassificationQueueConsumer.name);
-  private readonly MAX_RETRIES = 5;
+  private readonly RETRY_DELAYS_MS = [2000, 4000, 16000]; // 3 retries: 2s, 4s, 16s
 
   constructor(
     private classificationService: ClassificationService,
@@ -35,7 +34,7 @@ export class ClassificationQueueConsumer {
     const attemptNumber = retryCount + 1;
 
     this.logger.log(
-      `Processing classification for lead: ${payload.leadId} (attempt ${attemptNumber}/${this.MAX_RETRIES + 1})`,
+      `Processing classification for lead: ${payload.leadId} (attempt ${attemptNumber}/${this.RETRY_DELAYS_MS.length + 1})`,
     );
 
     let recordId: string | null = null;
@@ -106,10 +105,10 @@ export class ClassificationQueueConsumer {
       }
 
       // Retry logic
-      if (retryCount < this.MAX_RETRIES) {
-        const delayMs = computeRetryDelayMs(retryCount + 1);
+      if (retryCount < this.RETRY_DELAYS_MS.length) {
+        const delayMs = this.RETRY_DELAYS_MS[retryCount];
         this.logger.log(
-          `Retrying classification for lead ${payload.leadId}, attempt ${retryCount + 2}/${this.MAX_RETRIES + 1} after ${delayMs}ms`,
+          `Retrying classification for lead ${payload.leadId}, attempt ${retryCount + 2}/${this.RETRY_DELAYS_MS.length + 1} after ${delayMs}ms`,
         );
         await sleep(delayMs);
 
@@ -129,7 +128,7 @@ export class ClassificationQueueConsumer {
       } else {
         // Max retries exhausted - set lead to FAILED and publish to DLQ
         this.logger.error(
-          `Max retries (${this.MAX_RETRIES}) reached for lead ${payload.leadId}, sending to DLQ`,
+          `Max retries (${this.RETRY_DELAYS_MS.length}) reached for lead ${payload.leadId}, sending to DLQ`,
         );
 
         try {
