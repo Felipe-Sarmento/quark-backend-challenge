@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport, ClientOptions } from '@nestjs/microservices';
 import { ConfigService as NestConfigService } from '@nestjs/config';
-import { AppConfigModule, RABBITMQ_QUEUES } from '@modules/shared';
+import { AppConfigModule, RabbitmqModule, RABBITMQ_QUEUES } from '@modules/shared';
 import { LeadModule } from '@modules/lead';
 import { EnrichmentModule } from '@modules/enrichment';
 import { ClassificationModule } from '../classification.module';
@@ -13,6 +13,7 @@ import { ClassificationQueueConsumer } from './consumer/classification.queue-con
     LeadModule,
     EnrichmentModule,
     AppConfigModule,
+    RabbitmqModule,
     ClientsModule.registerAsync([
       {
         name: 'CLASSIFICATION_DLQ_CLIENT',

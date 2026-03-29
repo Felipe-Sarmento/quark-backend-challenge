@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport, ClientOptions } from '@nestjs/microservices';
 import { ConfigService as NestConfigService } from '@nestjs/config';
-import { AppConfigModule, RABBITMQ_QUEUES } from '@modules/shared';
+import { AppConfigModule, RabbitmqModule, RABBITMQ_QUEUES } from '@modules/shared';
 import { LeadModule } from '@modules/lead';
 import { EnrichmentModule } from '../enrichment.module';
 import { EnrichmentQueueConsumer } from './consumer/enrichment.queue-consumer';
@@ -11,6 +11,7 @@ import { EnrichmentQueueConsumer } from './consumer/enrichment.queue-consumer';
     EnrichmentModule,
     LeadModule,
     AppConfigModule,
+    RabbitmqModule,
     ClientsModule.registerAsync([
       {
         name: 'ENRICHMENT_DLQ_CLIENT',
