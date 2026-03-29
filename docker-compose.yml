@@ -58,6 +58,33 @@ services:
       timeout: 5s
       retries: 5
 
+  mock-api:
+    build:
+      context: .
+      args:
+        APP: mock-api
+    container_name: mock-api
+    network_mode: host
+    env_file: .env
+
+  lead-api:
+    build:
+      context: .
+      args:
+        APP: lead-api
+    container_name: lead-api
+    network_mode: host
+    env_file: .env
+
+  enrichment:
+    build:
+      context: .
+      args:
+        APP: enrichment
+    container_name: enrichment-worker
+    network_mode: host
+    env_file: .env
+
 volumes:
   postgres_data:
   ollama_data:

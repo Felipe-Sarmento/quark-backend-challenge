@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
-import { PrismaModule, RabbitmqModule } from '@modules/shared';
+import { AppConfigModule, PrismaModule, RabbitmqModule } from '@modules/shared';
 import { LeadModule } from '@modules/lead';
 import { EnrichmentService } from './core/service/enrichment.service';
 import { MockApiClient } from './http/client/mock-api.client';
@@ -12,7 +12,7 @@ import {
 import { LeadEnrichmentController } from './http/controller/lead.enrichment.controller';
 
 @Module({
-  imports: [HttpModule, PrismaModule, RabbitmqModule, LeadModule],
+  imports: [HttpModule, AppConfigModule, PrismaModule, RabbitmqModule, LeadModule],
   controllers: [LeadEnrichmentController],
   providers: [
     EnrichmentService,
