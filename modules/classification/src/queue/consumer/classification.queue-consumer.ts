@@ -1,0 +1,122 @@
+import { Controller, Logger, Inject } from '@nestjs/common';
+import { EventPattern, Payload } from '@nestjs/microservices';
+import { RABBITMQ_QUEUES } from '@modules/shared';
+import { ClassificationJobPayload, LeadPublicApi, LeadStatus } from '@modules/lead';
+import { EnrichmentPublicApi } from '@modules/enrichment';
+import { ClassificationService } from '../../core/service/classification.service';
+import { OllamaClient } from '../../http/client/ollama.client';
+import { CLASSIFICATION_PROMPT_TEMPLATE, ClassificationLeadData } from '../../infra/classification-prompt.const';
+
+@Controller()
+export class ClassificationQueueConsumer {
+  private readonly logger = new Logger(ClassificationQueueConsumer.name);
+
+  constructor(
+    private classificationService: ClassificationService,
+    private ollamaClient: OllamaClient,
+    @Inject(EnrichmentPublicApi) private enrichmentPublicApi: EnrichmentPublicApi,
+    @Inject(LeadPublicApi) private leadPublicApi: LeadPublicApi,
+  ) {}
+
+  @EventPattern(RABBITMQ_QUEUES.CLASSIFICATION_TRIGGER)
+  async handleClassificationJob(@Payload() payload: ClassificationJobPayload): Promise<void> {
+    this.logger.log(`Processing classification for lead: ${payload.leadId}`);
+
+    try {
+      // Create classification record
+      const classification = await this.classificationService.createRecord(payload.leadId);
+
+      // Get latest successful enrichment
+      const enrichment = await this.enrichmentPublicApi.getLatestSuccessfulEnrichment(
+        payload.leadId,
+      );
+
+      if (!enrichment) {
+        this.logger.warn(
+          `No successful enrichment found for lead: ${payload.leadId}, marking classification as failed`,
+        );
+        await this.classificationService.updateError(
+          classification.id,
+          'No successful enrichment found',
+        );
+        return;
+      }
+
+      // Build prompt with lead and enrichment data
+      const leadData: ClassificationLeadData = {
+        fullName: payload.fullName,
+        email: payload.email,
+        companyName: payload.companyName,
+        companyCnpj: payload.companyCnpj,
+        estimatedValue: payload.estimatedValue,
+        notes: payload.notes,
+        enrichmentData: enrichment.enrichmentData || {},
+      };
+
+      const prompt = CLASSIFICATION_PROMPT_TEMPLATE(leadData);
+
+      // Call Ollama to classify
+      const ollamaResponse = await this.ollamaClient.classify(prompt);
+
+      // Parse response and extract JSON
+      const classificationData = this.parseClassificationResponse(ollamaResponse);
+
+      // Update classification with success
+      await this.classificationService.updateSuccess(classification.id, {
+        score: classificationData.score,
+        classification: classificationData.classification,
+        justification: classificationData.justification,
+        commercialPotential: classificationData.commercialPotential,
+        modelUsed: 'tinyllama',
+      });
+
+      await this.leadPublicApi.changeStatus(payload.leadId, LeadStatus.CLASSIFIED);
+      this.logger.log(`Classification completed for lead: ${payload.leadId}`);
+    } catch (error) {
+      this.logger.error(`Classification failed for lead: ${payload.leadId}`, error);
+      throw error;
+    }
+  }
+
+  private parseClassificationResponse(response: string): {
+    score: number;
+    classification: string;
+    justification: string;
+    commercialPotential: string;
+  } {
+    try {
+      // Extract JSON from response (in case there's text before/after)
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in response');
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      // Validate required fields
+      if (
+        typeof parsed.score !== 'number' ||
+        typeof parsed.classification !== 'string' ||
+        typeof parsed.justification !== 'string' ||
+        typeof parsed.commercialPotential !== 'string'
+      ) {
+        throw new Error('Invalid classification response structure');
+      }
+
+      return {
+        score: Math.max(0, Math.min(100, parsed.score)),
+        classification: parsed.classification,
+        justification: parsed.justification,
+        commercialPotential: parsed.commercialPotential,
+      };
+    } catch (error) {
+      this.logger.warn('Failed to parse Ollama response, using fallback', error);
+      return {
+        score: 50,
+        classification: 'WARM',
+        justification: 'Padrão - falha ao processar resposta',
+        commercialPotential: 'MEDIUM',
+      };
+    }
+  }
+}

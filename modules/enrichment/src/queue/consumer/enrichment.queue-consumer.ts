@@ -1,7 +1,7 @@
 import { Controller, Logger, Inject } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { RABBITMQ_QUEUES } from '@modules/shared';
-import { EnrichmentJobPayload, LeadPublicApi } from '@modules/lead';
+import { EnrichmentJobPayload, LeadPublicApi, LeadStatus } from '@modules/lead';
 import { EnrichmentService } from '../../core/service/enrichment.service';
 import { MockApiClient } from '../../http/client/mock-api.client';
 
@@ -26,6 +26,7 @@ export class EnrichmentQueueConsumer {
       const enrichmentData = await this.mockApiClient.enrichCompany(lead.companyCnpj);
 
       await this.enrichmentService.updateEnrichmentSuccess(enrichment.id, enrichmentData);
+      await this.leadPublicApi.changeStatus(payload.leadId, LeadStatus.ENRICHED);
       this.logger.log(`Enrichment completed for lead: ${payload.leadId}`);
     } catch (error) {
       this.logger.error(`Enrichment failed for lead: ${payload.leadId}`, error);

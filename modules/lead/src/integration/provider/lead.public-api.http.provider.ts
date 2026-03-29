@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@modules/shared';
 import { firstValueFrom } from 'rxjs';
-import { Lead } from '../../core/entity/lead.entity';
+import { Lead, LeadStatus } from '../../core/entity/lead.entity';
 import { LeadPublicApi } from '../interface/lead.public-api.interface';
 import { LeadResponse } from '../../http/response/lead.response';
 
@@ -31,5 +31,9 @@ export class LeadPublicApiHttpProvider implements LeadPublicApi {
       this.logger.error(`Failed to fetch lead ${id} from HTTP API`, error);
       throw error;
     }
+  }
+
+  async changeStatus(_id: string, _status: LeadStatus): Promise<void> {
+    throw new Error('Not implemented for HTTP provider');
   }
 }

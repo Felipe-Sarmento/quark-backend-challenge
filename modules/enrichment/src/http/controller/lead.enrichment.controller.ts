@@ -9,6 +9,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { LeadPublicApi, LeadEnrichmentReceivedResponse, EnrichmentJobQueueProducer } from '@modules/lead';
+import { LeadStatus } from '@modules/lead';
 import { EnrichmentService } from '../../core/service/enrichment.service';
 import { EnrichmentResponse } from '../response/enrichment.response';
 
@@ -26,13 +27,13 @@ export class LeadEnrichmentController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<LeadEnrichmentReceivedResponse> {
     await this.leadPublicApi.getLeadOrThrow(id);
+    await this.leadPublicApi.changeStatus(id, LeadStatus.ENRICHING);
     await this.enrichmentJobQueueProducer.triggerEnrichment({ leadId: id });
     return LeadEnrichmentReceivedResponse.create();
   }
 
   @Get(':id/enrichments')
   async listEnrichments(@Param('id', ParseUUIDPipe) id: string): Promise<EnrichmentResponse[]> {
-    await this.leadPublicApi.getLeadOrThrow(id);
     const enrichments = await this.enrichmentService.listByLeadId(id);
     return enrichments.map(EnrichmentResponse.fromDomain);
   }
