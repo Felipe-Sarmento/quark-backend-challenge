@@ -3,11 +3,12 @@ import { randomUUID } from 'crypto';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { faker } from '@faker-js/faker';
 import { LeadController, LeadService } from '../../../index';
 import { ILeadRepository } from '../../../core/interface/lead.repository.interface';
 import { LeadPrismaRepository } from '../../../persistence/lead.prisma.repository';
+import { EnrichmentJobQueueProducer } from '../../../queue/producer/enrichment-job.queue-producer';
 import { PrismaModule, PrismaService, HttpExceptionFilter } from '@modules/shared';
 
 describe('LeadController (e2e)', () => {
@@ -17,6 +18,10 @@ describe('LeadController (e2e)', () => {
   faker.seed(42);
 
   beforeAll(async () => {
+    const mockEnrichmentJobQueueProducer = {
+      triggerEnrichment: vi.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [PrismaModule],
       controllers: [LeadController],
@@ -25,6 +30,10 @@ describe('LeadController (e2e)', () => {
         {
           provide: ILeadRepository,
           useClass: LeadPrismaRepository,
+        },
+        {
+          provide: EnrichmentJobQueueProducer,
+          useValue: mockEnrichmentJobQueueProducer,
         },
       ],
     }).compile();
@@ -53,6 +62,7 @@ describe('LeadController (e2e)', () => {
 
   afterEach(async () => {
     await prisma.lead.deleteMany();
+    vi.clearAllMocks();
   });
 
   describe('POST /leads', () => {
@@ -536,6 +546,72 @@ describe('LeadController (e2e)', () => {
 
       // Assert
       expect(response.status).toBe(404);
+    });
+  });
+
+  describe('POST /leads/:id/enrichment', () => {
+    it('should trigger enrichment and return 202 with message', async () => {
+      // Arrange
+      const now = new Date();
+      const createdLead = await prisma.lead.create({
+        data: {
+          id: randomUUID(),
+          fullName: faker.person.fullName(),
+          email: faker.internet.email(),
+          phone: faker.phone.number({ style: 'national' }),
+          companyName: faker.company.name(),
+          companyCnpj: faker.string.numeric(14),
+          source: 'WEBSITE',
+          status: 'PENDING',
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+
+      // Act
+      const response = await request(app.getHttpServer()).post(
+        `/leads/${createdLead.id}/enrichment`,
+      );
+
+      // Assert
+      expect(response.status).toBe(202);
+      expect(response.body).toEqual({ message: 'Enrichment request received' });
+
+      // Verify producer was called with correct payload
+      const mockProducer = app.get(EnrichmentJobQueueProducer);
+      expect(mockProducer.triggerEnrichment).toHaveBeenCalledWith({ leadId: createdLead.id });
+      expect(mockProducer.triggerEnrichment).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return 400 when id is not a valid UUID', async () => {
+      // Act
+      const response = await request(app.getHttpServer()).post('/leads/not-a-uuid/enrichment');
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 404 when lead does not exist', async () => {
+      // Arrange
+      const nonExistentId = faker.string.uuid();
+
+      // Act
+      const response = await request(app.getHttpServer()).post(
+        `/leads/${nonExistentId}/enrichment`,
+      );
+
+      // Assert
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe('GET /leads/:id/enrichments', () => {
+    it('should return 501 Not Implemented', async () => {
+      // Act
+      const response = await request(app.getHttpServer()).get(`/leads/${faker.string.uuid()}/enrichments`);
+
+      // Assert
+      expect(response.status).toBe(501);
     });
   });
 });
