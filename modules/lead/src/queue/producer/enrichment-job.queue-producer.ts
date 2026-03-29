@@ -4,10 +4,6 @@ import { RABBITMQ_QUEUES } from '@modules/shared';
 
 export interface EnrichmentJobPayload {
   leadId: string;
-  email: string;
-  companyName: string;
-  companyCnpj: string;
-  companyWebsite?: string;
 }
 
 @Injectable()
