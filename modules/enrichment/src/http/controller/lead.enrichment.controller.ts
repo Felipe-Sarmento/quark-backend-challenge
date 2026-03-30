@@ -12,6 +12,7 @@ import { LeadPublicApi, LeadEnrichmentReceivedResponse, EnrichmentJobQueueProduc
 import { LeadStatus } from '@modules/lead';
 import { EnrichmentService } from '../../core/service/enrichment.service';
 import { EnrichmentResponse } from '../response/enrichment.response';
+import { randomUUID } from 'node:crypto';
 
 @Controller('leads')
 export class LeadEnrichmentController {
@@ -28,7 +29,7 @@ export class LeadEnrichmentController {
   ): Promise<LeadEnrichmentReceivedResponse> {
     await this.leadPublicApi.getLeadOrThrow(id);
     await this.leadPublicApi.changeStatus(id, LeadStatus.ENRICHING);
-    await this.enrichmentJobQueueProducer.triggerEnrichment({ leadId: id });
+    await this.enrichmentJobQueueProducer.triggerEnrichment({ leadId: id, idempotencyKey: randomUUID() });
     return LeadEnrichmentReceivedResponse.create();
   }
 

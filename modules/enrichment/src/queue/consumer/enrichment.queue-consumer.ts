@@ -5,7 +5,7 @@ import {
   DlqPayload,
   sleep,
 } from '@modules/shared';
-import { EnrichmentJobPayload, LeadPublicApi, LeadStatus } from '@modules/lead';
+import { Enrichment, EnrichmentJobPayload, LeadPublicApi, LeadStatus } from '@modules/lead';
 import { EnrichmentService } from '../../core/service/enrichment.service';
 import { MockApiClient } from '../../http/client/mock-api.client';
 
@@ -35,9 +35,8 @@ export class EnrichmentQueueConsumer {
 
     try {
       const lead = await this.leadPublicApi.getLeadOrThrow(payload.leadId);
-      const enrichment = await this.enrichmentService.createEnrichmentRecord(
-        payload.leadId,
-      );
+      const enrichment = await this.createOrFindEnrichment(payload.idempotencyKey, payload.leadId)
+
       recordId = enrichment.id;
 
       const enrichmentData = await this.mockApiClient.enrichCompany(lead.companyCnpj);
@@ -118,5 +117,18 @@ export class EnrichmentQueueConsumer {
         }
       }
     }
+  }
+
+  private async createOrFindEnrichment(idempotencyKey: string, leadId: string): Promise<Enrichment> {
+    let enrichment: Enrichment;
+
+    const exists = await this.enrichmentService.findEnrichmentById(idempotencyKey)
+
+    enrichment = exists ? exists : await this.enrichmentService.createEnrichmentRecord(
+        idempotencyKey,
+        leadId
+      );
+      
+    return enrichment;
   }
 }

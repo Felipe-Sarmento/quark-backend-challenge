@@ -8,9 +8,12 @@ import { EnrichmentFactory } from '../core/factory/enrichment.factory';
 export class EnrichmentPrismaRepository implements IEnrichmentRepository {
   constructor(private prisma: PrismaService) {}
 
-  async create(leadId: string): Promise<Enrichment> {
+
+
+  async create(id: string, leadId: string): Promise<Enrichment> {
     const enrichment = await this.prisma.enrichment.create({
       data: {
+        id,
         leadId,
         status: EnrichmentStatus.PROCESSING,
       },
@@ -52,6 +55,15 @@ export class EnrichmentPrismaRepository implements IEnrichmentRepository {
     const enrichment = await this.prisma.enrichment.findFirst({
       where: { leadId },
       orderBy: { createdAt: 'desc' },
+    });
+
+    return enrichment ? EnrichmentFactory.create(enrichment as any) : null;
+  }
+
+    
+  async findById(id: string): Promise<Enrichment | null> {
+    const enrichment = await this.prisma.enrichment.findFirst({
+      where: { id },
     });
 
     return enrichment ? EnrichmentFactory.create(enrichment as any) : null;

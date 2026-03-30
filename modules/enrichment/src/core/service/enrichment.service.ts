@@ -11,8 +11,8 @@ export class EnrichmentService {
     private repo: IEnrichmentRepository,
   ) {}
 
-  async createEnrichmentRecord(leadId: string): Promise<Enrichment> {
-    return this.repo.create(leadId);
+  async createEnrichmentRecord(id: string, leadId: string): Promise<Enrichment> {
+    return this.repo.create(id, leadId);
   }
 
   async updateEnrichmentSuccess(
@@ -29,6 +29,11 @@ export class EnrichmentService {
   async getLatestEnrichment(leadId: string): Promise<Enrichment | null> {
     return this.repo.findLatestByLeadId(leadId);
   }
+
+  async findEnrichmentById(id: string): Promise<Enrichment | null> {
+    return this.repo.findById(id);
+  }
+
 
   async listByLeadId(leadId: string): Promise<Enrichment[]> {
     return this.repo.listByLeadId(leadId);
