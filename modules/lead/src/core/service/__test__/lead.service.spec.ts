@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NotFoundException } from '@nestjs/common';
 import { LeadService } from '../lead.service';
 import { ILeadRepository } from '../../interface/lead.repository.interface';
 import { Page } from '@modules/shared';
 import { LeadStatus } from '../../entity/lead.entity';
 import { makeLeadEntity } from '@test/fixtures/make-lead.helper';
 import type { LeadCreationFields } from '../../entity/types';
+import { LeadNotFoundException } from '../../exception/not-found.lead.exception';
 
 describe('LeadService', () => {
   const mockRepository = {
@@ -95,7 +95,7 @@ describe('LeadService', () => {
 
       // Act & Assert
       await expect(service.findById(leadId)).rejects.toThrow(
-        NotFoundException,
+        LeadNotFoundException,
       );
       await expect(service.findById(leadId)).rejects.toThrow(
         /Lead with ID/,
@@ -124,7 +124,7 @@ describe('LeadService', () => {
 
       // Act & Assert
       await expect(service.findByEmail(email)).rejects.toThrow(
-        NotFoundException,
+        LeadNotFoundException,
       );
     });
   });
@@ -221,7 +221,7 @@ describe('LeadService', () => {
       // Act & Assert
       await expect(
         service.updateStatus(leadId, newStatus),
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(LeadNotFoundException);
     });
   });
 
