@@ -18,7 +18,7 @@ export * from './http/controller/lead.controller';
 export * from './http/dto/create.lead.dto';
 export * from './http/dto/update.lead.dto';
 export * from './http/response/lead.response';
-export * from './http/response/lead-enrichment-received.response';
+export * from '../../enrichment/src/http/response/lead-enrichment-received.response';
 
 // Integration / Public API
 export * from './integration/interface/lead.public-api.interface';

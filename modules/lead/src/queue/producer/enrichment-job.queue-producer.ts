@@ -4,6 +4,7 @@ import { RABBITMQ_QUEUES } from '@modules/shared';
 
 export interface EnrichmentJobPayload {
   leadId: string;
+  idempotencyKey: string;
   retryCount?: number;
 }
 
@@ -15,6 +16,6 @@ export class EnrichmentJobQueueProducer {
   ) {}
 
   async triggerEnrichment(payload: EnrichmentJobPayload): Promise<void> {
-    await this.client.emit(RABBITMQ_QUEUES.ENRICHMENT_TRIGGER, payload).toPromise();
+    await this.client.emit(RABBITMQ_QUEUES.ENRICHMENT_TRIGGER, payload);
   }
 }

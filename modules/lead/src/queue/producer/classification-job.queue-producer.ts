@@ -4,12 +4,7 @@ import { RABBITMQ_QUEUES } from '@modules/shared';
 
 export interface ClassificationJobPayload {
   leadId: string;
-  fullName: string;
-  email: string;
-  companyName: string;
-  companyCnpj: string;
-  estimatedValue?: number;
-  notes?: string;
+  idempotencyKey: string;
   retryCount?: number;
 }
 
@@ -20,7 +15,8 @@ export class ClassificationJobQueueProducer {
     private client: ClientProxy,
   ) {}
 
+  // TODO: Change Payload
   async triggerClassification(payload: ClassificationJobPayload): Promise<void> {
-    await this.client.emit(RABBITMQ_QUEUES.CLASSIFICATION_TRIGGER, payload).toPromise();
+    await this.client.emit(RABBITMQ_QUEUES.CLASSIFICATION_TRIGGER, payload);
   }
 }
