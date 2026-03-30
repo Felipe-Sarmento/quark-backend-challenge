@@ -9,9 +9,11 @@ import { LeadController, LeadService, LeadPublicApi, Enrichment, EnrichmentStatu
 import { ILeadRepository } from '../../../core/interface/lead.repository.interface';
 import { LeadPrismaRepository } from '../../../persistence/lead.prisma.repository';
 import { EnrichmentJobQueueProducer } from '../../../queue/producer/enrichment-job.queue-producer';
+import { LeadExportService } from '../../../core/service/lead-export.service';
+import { CsvService } from '../../../infra/csv.service';
+import { LeadPublicApiModuleProvider } from '../../../integration/provider/lead.public-api.module.provider';
 import { PrismaModule, PrismaService, HttpExceptionFilter } from '@modules/shared';
 import { LeadEnrichmentController, EnrichmentService } from '@modules/enrichment';
-import { NotFoundException } from '@nestjs/common';
 
 describe('LeadController (e2e)', () => {
   let app: INestApplication;
@@ -22,14 +24,6 @@ describe('LeadController (e2e)', () => {
   beforeAll(async () => {
     const mockEnrichmentJobQueueProducer = {
       triggerEnrichment: vi.fn().mockResolvedValue(undefined),
-    };
-
-    const mockLeadPublicApi = {
-      getLeadOrThrow: vi.fn().mockImplementation(async (id: string) => {
-        const lead = await prisma?.lead.findUnique({ where: { id } });
-        if (!lead) throw new NotFoundException(`Lead with id ${id} not found`);
-        return lead;
-      }),
     };
 
     const mockEnrichmentService = {
@@ -49,14 +43,17 @@ describe('LeadController (e2e)', () => {
           provide: EnrichmentJobQueueProducer,
           useValue: mockEnrichmentJobQueueProducer,
         },
+        LeadPublicApiModuleProvider,
         {
           provide: LeadPublicApi,
-          useValue: mockLeadPublicApi,
+          useClass: LeadPublicApiModuleProvider,
         },
         {
           provide: EnrichmentService,
           useValue: mockEnrichmentService,
         },
+        LeadExportService,
+        CsvService,
       ],
     }).compile();
 
@@ -656,7 +653,9 @@ describe('LeadController (e2e)', () => {
 
       // Verify producer was called with correct payload
       const mockProducer = app.get(EnrichmentJobQueueProducer);
-      expect(mockProducer.triggerEnrichment).toHaveBeenCalledWith({ leadId: createdLead.id });
+      expect(mockProducer.triggerEnrichment).toHaveBeenCalledWith(
+        expect.objectContaining({ leadId: createdLead.id }),
+      );
       expect(mockProducer.triggerEnrichment).toHaveBeenCalledTimes(1);
     });
 
