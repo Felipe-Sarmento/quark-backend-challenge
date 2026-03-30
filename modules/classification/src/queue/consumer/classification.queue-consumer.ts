@@ -169,13 +169,11 @@ export class ClassificationQueueConsumer {
     commercialPotential: string;
   } {
     try {
-      // Extract JSON from response (in case there's text before/after)
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in response');
-      }
+      // Ollama with format: "json" returns pure JSON string
+      const parsed = JSON.parse(response);
 
-      const parsed = JSON.parse(jsonMatch[0]);
+      this.logger.debug(`Ollama raw response: ${response}`);
+      this.logger.debug(`Ollama parsed: ${JSON.stringify(parsed)}`);
 
       // Validate required fields
       if (
