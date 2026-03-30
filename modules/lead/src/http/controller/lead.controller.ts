@@ -9,17 +9,23 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
 import { LeadService } from '../../core/service/lead.service';
+import { LeadExportService } from '../../core/service/lead-export.service';
 import { CreateLeadDto } from '../dto/create.lead.dto';
 import { UpdateLeadDto } from '../dto/update.lead.dto';
+import { ExportLeadsQueryDto } from '../dto/export-leads.query.dto';
 import { LeadResponse } from '../response/lead.response';
 import { LeadListResponse } from '../response/lead-list.response';
 import { PageQueryDto } from '@modules/shared/http/dto/page.query.dto';
 
 @Controller('leads')
 export class LeadController {
-  constructor(private readonly leadService: LeadService) {}
+  constructor(
+    private readonly leadService: LeadService,
+    private readonly leadExportService: LeadExportService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.OK)
@@ -37,6 +43,21 @@ export class LeadController {
       leads.map((lead) => LeadResponse.fromDomain(lead)),
       enrichedPage,
     );
+  }
+
+  @Get('export')
+  async export(
+    @Query() query: ExportLeadsQueryDto,
+    @Res() res: any,
+  ): Promise<void> {
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="leads-export.csv"',
+    );
+
+    await this.leadExportService.stream(query.status, res);
+    res.end();
   }
 
   @Get(':id')

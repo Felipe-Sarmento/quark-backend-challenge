@@ -109,4 +109,27 @@ export class LeadPrismaRepository implements ILeadRepository {
       throw error;
     }
   }
+
+  async exportBatch(options: {
+    status?: string;
+    cursor?: string;
+    take: number;
+  }): Promise<any[]> {
+    const { status, cursor, take } = options;
+
+    const whereClause = status ? { status: status as any } : undefined;
+
+    const leads = await this.prisma.lead.findMany({
+      where: whereClause,
+      take,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      orderBy: { createdAt: 'asc' },
+      include: {
+        enrichments: { orderBy: { requestedAt: 'desc' } },
+        classifications: { orderBy: { requestedAt: 'desc' } },
+      },
+    });
+
+    return leads;
+  }
 }

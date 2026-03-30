@@ -3,6 +3,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { PrismaModule, AppConfigModule, RABBITMQ_QUEUES } from '@modules/shared';
 import { LeadService } from './core/service/lead.service';
+import { LeadExportService } from './core/service/lead-export.service';
 import { LeadPrismaRepository } from './persistence/lead.prisma.repository';
 import {
   ILeadRepository,
@@ -55,6 +56,7 @@ import { LeadPublicApiModuleProvider } from './integration/provider/lead.public-
       useClass: LeadPrismaRepository,
     },
     LeadService,
+    LeadExportService,
     EnrichmentJobQueueProducer,
     ClassificationJobQueueProducer,
     LeadPublicApiModuleProvider,

@@ -758,4 +758,132 @@ describe('LeadController (e2e)', () => {
       expect(response.status).toBe(400);
     });
   });
+
+  describe('GET /leads/export', () => {
+    it('should export all leads as CSV', async () => {
+      // Arrange
+      const lead1 = await prisma.lead.create({
+        data: {
+          id: randomUUID(),
+          fullName: 'John Doe',
+          email: 'john@example.com',
+          phone: '+5511999991111',
+          companyName: 'Acme Corp',
+          companyCnpj: '12345678000195',
+          source: 'WEBSITE',
+          status: 'PENDING',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+
+      const lead2 = await prisma.lead.create({
+        data: {
+          id: randomUUID(),
+          fullName: 'Jane Smith',
+          email: 'jane@example.com',
+          phone: '+5511998889999',
+          companyName: 'Tech Inc',
+          companyCnpj: '98765432000123',
+          source: 'ORGANIC',
+          status: 'CLASSIFIED',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .get('/leads/export')
+        .expect('Content-Type', /text\/csv/);
+
+      // Assert
+      expect(response.status).toBe(200);
+      expect(response.headers['content-disposition']).toContain('leads-export.csv');
+
+      // Verify CSV format: check header and data rows
+      const lines = response.text.split('\n').filter(line => line.trim());
+      expect(lines.length).toBeGreaterThanOrEqual(2); // header + at least 2 data rows
+
+      // Verify header contains expected columns
+      const headerLine = lines[0];
+      expect(headerLine).toContain('id,fullName,email');
+      expect(headerLine).toContain('status');
+      expect(headerLine).toContain('enrichment_status');
+      expect(headerLine).toContain('classification_status');
+    });
+
+    it('should export only leads with specific status', async () => {
+      // Arrange
+      await prisma.lead.create({
+        data: {
+          id: randomUUID(),
+          fullName: 'Alice',
+          email: 'alice@example.com',
+          phone: '+5511988887777',
+          companyName: 'Startup A',
+          companyCnpj: '11111111000111',
+          source: 'WEBSITE',
+          status: 'CLASSIFIED',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+
+      await prisma.lead.create({
+        data: {
+          id: randomUUID(),
+          fullName: 'Bob',
+          email: 'bob@example.com',
+          phone: '+5511977776666',
+          companyName: 'Startup B',
+          companyCnpj: '22222222000222',
+          source: 'REFERRAL',
+          status: 'PENDING',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .get('/leads/export?status=CLASSIFIED')
+        .expect('Content-Type', /text\/csv/);
+
+      // Assert
+      expect(response.status).toBe(200);
+      const lines = response.text.split('\n').filter(line => line.trim());
+      // Should have header + at least 1 classified lead
+      expect(lines.length).toBeGreaterThanOrEqual(2);
+
+      // Verify that all data rows contain CLASSIFIED status
+      for (let i = 1; i < lines.length; i++) {
+        const fields = lines[i].split(',');
+        // Status should be around column 11
+        expect(fields[10]).toContain('CLASSIFIED');
+      }
+    });
+
+    it('should return 400 for invalid status filter', async () => {
+      // Act
+      const response = await request(app.getHttpServer())
+        .get('/leads/export?status=INVALID_STATUS');
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
+
+    it('should export empty CSV when no leads match filter', async () => {
+      // Act
+      const response = await request(app.getHttpServer())
+        .get('/leads/export?status=FAILED')
+        .expect('Content-Type', /text\/csv/);
+
+      // Assert
+      expect(response.status).toBe(200);
+      const lines = response.text.split('\n').filter(line => line.trim());
+      // Should have only header, no data rows
+      expect(lines.length).toBe(1);
+    });
+  });
 });
