@@ -20,6 +20,7 @@ export class OllamaClient {
           model: this.configService.ollamaModel,
           prompt,
           stream: false,
+          format: "json"
         }),
       );
       return response.data.response;
