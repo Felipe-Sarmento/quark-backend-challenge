@@ -13,6 +13,7 @@ import { ClassificationJobQueueProducer } from './queue/producer/classification-
 import { LeadController } from './http/controller/lead.controller';
 import { LeadPublicApi } from './integration/interface/lead.public-api.interface';
 import { LeadPublicApiModuleProvider } from './integration/provider/lead.public-api.module.provider';
+import { CsvService } from './infra/csv.service';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { LeadPublicApiModuleProvider } from './integration/provider/lead.public-
       useClass: LeadPrismaRepository,
     },
     LeadService,
+    CsvService,
     LeadExportService,
     EnrichmentJobQueueProducer,
     ClassificationJobQueueProducer,
