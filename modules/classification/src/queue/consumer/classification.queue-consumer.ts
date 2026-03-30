@@ -172,6 +172,9 @@ export class ClassificationQueueConsumer {
       // Ollama with format: "json" returns pure JSON string
       const parsed = JSON.parse(response);
 
+      this.logger.debug(`Ollama raw response: ${response}`);
+      this.logger.debug(`Ollama parsed: ${JSON.stringify(parsed)}`);
+
       // Validate required fields
       if (
         typeof parsed.score !== 'number' ||
