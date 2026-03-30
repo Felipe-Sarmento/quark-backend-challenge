@@ -3,17 +3,15 @@ import { randomUUID } from 'crypto';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { faker } from '@faker-js/faker';
-import { LeadController, LeadService, LeadPublicApi, Enrichment, EnrichmentStatus } from '../../../index';
+import { LeadController, LeadService, LeadPublicApi } from '../../../index';
 import { ILeadRepository } from '../../../core/interface/lead.repository.interface';
 import { LeadPrismaRepository } from '../../../persistence/lead.prisma.repository';
-import { EnrichmentJobQueueProducer } from '../../../queue/producer/enrichment-job.queue-producer';
 import { LeadExportService } from '../../../core/service/lead-export.service';
 import { CsvService } from '../../../infra/csv.service';
 import { LeadPublicApiModuleProvider } from '../../../integration/provider/lead.public-api.module.provider';
 import { PrismaModule, PrismaService, HttpExceptionFilter } from '@modules/shared';
-import { LeadEnrichmentController, EnrichmentService } from '@modules/enrichment';
 
 describe('LeadController (e2e)', () => {
   let app: INestApplication;
@@ -22,35 +20,19 @@ describe('LeadController (e2e)', () => {
   faker.seed(42);
 
   beforeAll(async () => {
-    const mockEnrichmentJobQueueProducer = {
-      triggerEnrichment: vi.fn().mockResolvedValue(undefined),
-    };
-
-    const mockEnrichmentService = {
-      listByLeadId: vi.fn().mockResolvedValue([]),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       imports: [PrismaModule],
-      controllers: [LeadController, LeadEnrichmentController],
+      controllers: [LeadController],
       providers: [
         LeadService,
         {
           provide: ILeadRepository,
           useClass: LeadPrismaRepository,
         },
-        {
-          provide: EnrichmentJobQueueProducer,
-          useValue: mockEnrichmentJobQueueProducer,
-        },
         LeadPublicApiModuleProvider,
         {
           provide: LeadPublicApi,
           useClass: LeadPublicApiModuleProvider,
-        },
-        {
-          provide: EnrichmentService,
-          useValue: mockEnrichmentService,
         },
         LeadExportService,
         CsvService,
@@ -81,7 +63,6 @@ describe('LeadController (e2e)', () => {
 
   afterEach(async () => {
     await prisma.lead.deleteMany();
-    vi.clearAllMocks();
   });
 
   describe('POST /leads', () => {
@@ -623,145 +604,10 @@ describe('LeadController (e2e)', () => {
     });
   });
 
-  describe('POST /leads/:id/enrichment', () => {
-    it('should trigger enrichment and return 202 with message', async () => {
-      // Arrange
-      const now = new Date();
-      const createdLead = await prisma.lead.create({
-        data: {
-          id: randomUUID(),
-          fullName: faker.person.fullName(),
-          email: faker.internet.email(),
-          phone: faker.phone.number({ style: 'national' }),
-          companyName: faker.company.name(),
-          companyCnpj: faker.string.numeric(14),
-          source: 'WEBSITE',
-          status: 'PENDING',
-          createdAt: now,
-          updatedAt: now,
-        },
-      });
-
-      // Act
-      const response = await request(app.getHttpServer()).post(
-        `/leads/${createdLead.id}/enrichment`,
-      );
-
-      // Assert
-      expect(response.status).toBe(202);
-      expect(response.body).toEqual({ message: 'Enrichment request received' });
-
-      // Verify producer was called with correct payload
-      const mockProducer = app.get(EnrichmentJobQueueProducer);
-      expect(mockProducer.triggerEnrichment).toHaveBeenCalledWith(
-        expect.objectContaining({ leadId: createdLead.id }),
-      );
-      expect(mockProducer.triggerEnrichment).toHaveBeenCalledTimes(1);
-    });
-
-    it('should return 400 when id is not a valid UUID', async () => {
-      // Act
-      const response = await request(app.getHttpServer()).post('/leads/not-a-uuid/enrichment');
-
-      // Assert
-      expect(response.status).toBe(400);
-    });
-
-    it('should return 404 when lead does not exist', async () => {
-      // Arrange
-      const nonExistentId = faker.string.uuid();
-
-      // Act
-      const response = await request(app.getHttpServer()).post(
-        `/leads/${nonExistentId}/enrichment`,
-      );
-
-      // Assert
-      expect(response.status).toBe(404);
-    });
-  });
-
-  describe('GET /leads/:id/enrichments', () => {
-    it('should return enrichments sorted newest first', async () => {
-      // Arrange
-      const now = new Date();
-      const createdLead = await prisma.lead.create({
-        data: {
-          id: randomUUID(),
-          fullName: faker.person.fullName(),
-          email: faker.internet.email(),
-          phone: faker.phone.number({ style: 'national' }),
-          companyName: faker.company.name(),
-          companyCnpj: faker.string.numeric(14),
-          source: 'WEBSITE',
-          status: 'PENDING',
-          createdAt: now,
-          updatedAt: now,
-        },
-      });
-
-      const olderDate = new Date(now.getTime() - 60000); // 1 minute earlier
-      const enrichmentA = new Enrichment({
-        id: randomUUID(),
-        leadId: createdLead.id,
-        status: EnrichmentStatus.SUCCESS,
-        requestedAt: new Date(now.getTime() - 30000),
-        completedAt: now,
-        createdAt: now,
-        updatedAt: now,
-        enrichmentData: { cnpj: '12345678000195', legalName: 'Acme Corp' },
-      });
-
-      const enrichmentB = new Enrichment({
-        id: randomUUID(),
-        leadId: createdLead.id,
-        status: EnrichmentStatus.SUCCESS,
-        requestedAt: new Date(olderDate.getTime() - 30000),
-        completedAt: olderDate,
-        createdAt: olderDate,
-        updatedAt: olderDate,
-        enrichmentData: { cnpj: '98765432000123', legalName: 'Old Company' },
-      });
-
-      const mockEnrichmentService = app.get(EnrichmentService);
-      (mockEnrichmentService.listByLeadId as any).mockResolvedValueOnce([enrichmentA, enrichmentB]);
-
-      // Act
-      const response = await request(app.getHttpServer()).get(`/leads/${createdLead.id}/enrichments`);
-
-      // Assert
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(2);
-      expect(response.body[0].id).toBe(enrichmentA.id);
-      expect(response.body[1].id).toBe(enrichmentB.id);
-      expect(mockEnrichmentService.listByLeadId).toHaveBeenCalledWith(createdLead.id);
-    });
-
-    it('should return empty array when lead does not exist', async () => {
-      // Arrange
-      const nonExistentId = faker.string.uuid();
-
-      // Act
-      const response = await request(app.getHttpServer()).get(`/leads/${nonExistentId}/enrichments`);
-
-      // Assert
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual([]);
-    });
-
-    it('should return 400 when id is not a valid UUID', async () => {
-      // Act
-      const response = await request(app.getHttpServer()).get('/leads/not-a-uuid/enrichments');
-
-      // Assert
-      expect(response.status).toBe(400);
-    });
-  });
-
   describe('GET /leads/export', () => {
     it('should export all leads as CSV', async () => {
       // Arrange
-      const lead1 = await prisma.lead.create({
+      await prisma.lead.create({
         data: {
           id: randomUUID(),
           fullName: 'John Doe',
@@ -776,7 +622,7 @@ describe('LeadController (e2e)', () => {
         },
       });
 
-      const lead2 = await prisma.lead.create({
+      await prisma.lead.create({
         data: {
           id: randomUUID(),
           fullName: 'Jane Smith',

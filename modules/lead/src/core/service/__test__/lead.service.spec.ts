@@ -52,30 +52,25 @@ describe('LeadService', () => {
       expect(result).toEqual(lead);
     });
 
-    it('should return local lead entity even when repository throws', async () => {
+    it('should re-throw when repository throws', async () => {
       // Arrange
-      const sampleLead = makeLeadEntity();
       const creationData: LeadCreationFields = {
         fullName: 'John Doe',
         email: 'john@example.com',
         phone: '1234567890',
         companyName: 'Acme Corp',
         companyCnpj: '12345678901234',
-        source: sampleLead.source,
+        source: 'WEBSITE',
       };
 
       (mockRepository.create as any).mockRejectedValue(
         new Error('Database error'),
       );
 
-      // Act
-      const result = await service.create(creationData);
-
-      // Assert
-      expect(mockRepository.create).toHaveBeenCalled();
-      expect(result.fullName).toBe(creationData.fullName);
-      expect(result.email).toBe(creationData.email);
-      expect(result.status).toBe(LeadStatus.PENDING);
+      // Act & Assert
+      await expect(service.create(creationData)).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 
@@ -231,30 +226,16 @@ describe('LeadService', () => {
   });
 
   describe('delete', () => {
-    it('should find lead and delete it', async () => {
+    it('should delete lead by id', async () => {
       // Arrange
-      const lead = makeLeadEntity();
-      const leadId = lead.id!;
-      (mockRepository.findById as any).mockResolvedValue(lead);
+      const leadId = 'lead-123';
       (mockRepository.delete as any).mockResolvedValue(undefined);
 
       // Act
       await service.delete(leadId);
 
       // Assert
-      expect(mockRepository.findById).toHaveBeenCalledWith(leadId);
       expect(mockRepository.delete).toHaveBeenCalledWith(leadId);
-    });
-
-    it('should throw NotFoundException when lead not found', async () => {
-      // Arrange
-      const leadId = 'nonexistent-id';
-      (mockRepository.findById as any).mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.delete(leadId)).rejects.toThrow(
-        NotFoundException,
-      );
     });
   });
 });

@@ -34,15 +34,16 @@ describe('EnrichmentService', () => {
   describe('createEnrichmentRecord', () => {
     it('should create an enrichment record with PROCESSING status', async () => {
       // Arrange
+      const enrichmentId = 'enrichment-uuid-1';
       const leadId = 'lead-uuid-123';
-      const mockEnrichment = createMockEnrichment({ leadId });
+      const mockEnrichment = createMockEnrichment({ id: enrichmentId, leadId });
       (mockRepository.create as any).mockResolvedValue(mockEnrichment);
 
       // Act
-      const result = await service.createEnrichmentRecord(leadId);
+      const result = await service.createEnrichmentRecord(enrichmentId, leadId);
 
       // Assert
-      expect(mockRepository.create).toHaveBeenCalledWith(leadId);
+      expect(mockRepository.create).toHaveBeenCalledWith(enrichmentId, leadId);
       expect(result).toBeInstanceOf(Enrichment);
       expect(result.status).toBe(EnrichmentStatus.PROCESSING);
       expect(result.leadId).toBe(leadId);

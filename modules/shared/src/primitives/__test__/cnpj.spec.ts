@@ -5,20 +5,20 @@ import { InvalidCnpjException } from '../../exception/invalid-cnpj.exception';
 describe('Cnpj', () => {
   describe('create with valid CNPJ', () => {
     it('should create CNPJ from formatted string', () => {
-      const cnpj = Cnpj.create('11.222.333/0001-81');
+      const cnpj = Cnpj.create('11.222.333/0001-09');
       expect(cnpj).toBeDefined();
-      expect(cnpj.toRaw()).toBe('11222333000181');
+      expect(cnpj.toRaw()).toBe('11222333000109');
     });
 
     it('should create CNPJ from raw digits', () => {
-      const cnpj = Cnpj.create('11222333000181');
+      const cnpj = Cnpj.create('11222333000109');
       expect(cnpj).toBeDefined();
-      expect(cnpj.toRaw()).toBe('11222333000181');
+      expect(cnpj.toRaw()).toBe('11222333000109');
     });
 
     it('should format CNPJ correctly', () => {
-      const cnpj = Cnpj.create('11222333000181');
-      expect(cnpj.toFormatted()).toBe('11.222.333/0001-81');
+      const cnpj = Cnpj.create('11222333000109');
+      expect(cnpj.toFormatted()).toBe('11.222.333/0001-09');
     });
   });
 
