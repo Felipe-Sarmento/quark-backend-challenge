@@ -37,7 +37,7 @@ model Lead {
 }
 
 model Enrichment {
-  id                String   @id @default(cuid())
+  id                String   @id
   leadId            String
   lead              Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
@@ -57,7 +57,7 @@ model Enrichment {
 }
 
 model Classification {
-  id                String   @id @default(cuid())
+  id                String   @id
   leadId            String
   lead              Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 

@@ -5,7 +5,7 @@ import {
   DlqPayload,
   sleep,
 } from '@modules/shared';
-import { ClassificationJobPayload, LeadPublicApi, LeadStatus } from '@modules/lead';
+import { Classification, ClassificationJobPayload, LeadPublicApi, LeadStatus } from '@modules/lead';
 import { EnrichmentPublicApi } from '@modules/enrichment';
 import { ClassificationService } from '../../core/service/classification.service';
 import { OllamaClient } from '../../http/client/ollama.client';
@@ -41,7 +41,7 @@ export class ClassificationQueueConsumer {
 
     try {
       // Create classification record
-      const classification = await this.classificationService.createRecord(payload.leadId);
+      const classification = await this.createOrFindClassification(payload.idempotencyKey, payload.leadId)
       recordId = classification.id;
 
       // Get latest successful enrichment
@@ -56,13 +56,15 @@ export class ClassificationQueueConsumer {
       }
 
       // Build prompt with lead and enrichment data
+      const lead = await this.leadPublicApi.getLeadOrThrow(payload.leadId);
+
       const leadData: ClassificationLeadData = {
-        fullName: payload.fullName,
-        email: payload.email,
-        companyName: payload.companyName,
-        companyCnpj: payload.companyCnpj,
-        estimatedValue: payload.estimatedValue,
-        notes: payload.notes,
+        fullName: lead.fullName,
+        email: lead.email,
+        companyName: lead.companyName,
+        companyCnpj: lead.companyCnpj,
+        estimatedValue: lead.estimatedValue,
+        notes: lead.notes,
         enrichmentData: enrichment.enrichmentData || {},
       };
 
@@ -201,4 +203,14 @@ export class ClassificationQueueConsumer {
       };
     }
   }
+
+    private async createOrFindClassification(idempotencyKey: string, leadId: string): Promise<Classification> {
+      let classification: Classification;
+  
+      const exists = await this.classificationService.findById(idempotencyKey)
+  
+      classification = exists ? exists : await this.classificationService.createRecord(idempotencyKey, leadId);
+        
+      return classification;
+    }
 }

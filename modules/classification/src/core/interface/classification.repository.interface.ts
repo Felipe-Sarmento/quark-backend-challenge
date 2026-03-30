@@ -1,7 +1,7 @@
 import { Classification } from '@modules/lead';
 
 export interface IClassificationRepository {
-  create(leadId: string): Promise<Classification>;
+  create(id: string, leadId: string): Promise<Classification>;
   updateSuccess(
     id: string,
     classificationData: {
@@ -14,6 +14,7 @@ export interface IClassificationRepository {
   ): Promise<Classification>;
   updateError(id: string, errorMessage: string): Promise<Classification>;
   findLatestByLeadId(leadId: string): Promise<Classification | null>;
+  findById(id: string): Promise<Classification | null>;
   listByLeadId(leadId: string): Promise<Classification[]>;
 }
 

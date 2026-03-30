@@ -11,6 +11,8 @@ import {
 import { LeadPublicApi, ClassificationJobQueueProducer, LeadStatus } from '@modules/lead';
 import { ClassificationService } from '../../core/service/classification.service';
 import { ClassificationResponse } from '../response/classification.response';
+import { randomUUID } from 'node:crypto';
+import { LeadClassificationReceivedResponse } from '../response/lead-classification-received.response';
 
 @Controller('leads')
 export class LeadClassificationController {
@@ -25,18 +27,13 @@ export class LeadClassificationController {
   async triggerClassification(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<{ message: string }> {
-    const lead = await this.leadPublicApi.getLeadOrThrow(id);
+    this.leadPublicApi.getLeadOrThrow(id);
     await this.leadPublicApi.changeStatus(id, LeadStatus.CLASSIFYING);
     await this.classificationJobQueueProducer.triggerClassification({
       leadId: id,
-      fullName: lead.fullName,
-      email: lead.email,
-      companyName: lead.companyName,
-      companyCnpj: lead.companyCnpj,
-      estimatedValue: lead.estimatedValue,
-      notes: lead.notes,
+      idempotencyKey: randomUUID()
     });
-    return { message: 'Classification request received' };
+    return LeadClassificationReceivedResponse.create();
   }
 
   @Get(':id/classifications')

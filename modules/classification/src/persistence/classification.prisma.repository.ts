@@ -8,9 +8,11 @@ import { ClassificationFactory } from '../core/factory/classification.factory';
 export class ClassificationPrismaRepository implements IClassificationRepository {
   constructor(private prisma: PrismaService) {}
 
-  async create(leadId: string): Promise<Classification> {
+
+  async create(id: string, leadId: string): Promise<Classification> {
     const classification = await this.prisma.classification.create({
       data: {
+        id,
         leadId,
         status: ClassificationStatus.PROCESSING,
       },
@@ -62,6 +64,14 @@ export class ClassificationPrismaRepository implements IClassificationRepository
     const classification = await this.prisma.classification.findFirst({
       where: { leadId },
       orderBy: { createdAt: 'desc' },
+    });
+
+    return classification ? ClassificationFactory.create(classification as any) : null;
+  }
+
+  async findById(id: string): Promise<Classification | null> {
+    const classification = await this.prisma.classification.findFirst({
+      where: { id },
     });
 
     return classification ? ClassificationFactory.create(classification as any) : null;

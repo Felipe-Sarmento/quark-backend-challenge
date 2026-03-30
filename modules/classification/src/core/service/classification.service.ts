@@ -11,8 +11,8 @@ export class ClassificationService {
     private repo: IClassificationRepository,
   ) {}
 
-  async createRecord(leadId: string): Promise<Classification> {
-    return this.repo.create(leadId);
+  async createRecord(id: string, leadId: string): Promise<Classification> {
+    return this.repo.create(id, leadId);
   }
 
   async updateSuccess(
@@ -34,6 +34,10 @@ export class ClassificationService {
 
   async getLatestByLeadId(leadId: string): Promise<Classification | null> {
     return this.repo.findLatestByLeadId(leadId);
+  }
+
+  async findById(id: string): Promise<Classification | null> {
+    return this.repo.findById(id);
   }
 
   async listByLeadId(leadId: string): Promise<Classification[]> {
