@@ -97,7 +97,7 @@ docker --version
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/quark-backend-challenge.git
+   git clone git@github.com:Felipe-Sarmento/quark-backend-challenge.git
    cd quark-backend-challenge
    ```
 
@@ -405,8 +405,6 @@ pnpm install
 ```
 
 ### Docker 
-
-OBS: First populate .env
 
 ```bash
 # Start all services
